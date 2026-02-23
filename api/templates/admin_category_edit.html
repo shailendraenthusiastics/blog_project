@@ -1,0 +1,25 @@
+{% extends "base_admin.html" %}
+{% block content %}
+<h3 class="mb-4">Edit Blog Category</h3>
+
+<form method="post" class="card p-4">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label for="name" class="form-label">Category Name</label>
+        <input type="text" id="name" name="name" class="form-control" value="{{ category.name }}" required>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Slug</label>
+        <input type="text" class="form-control" value="{{ category.slug|default:'-' }}" readonly>
+        <div class="form-text">Slug updates automatically from the name.</div>
+    </div>
+    <div class="form-check mb-3">
+        <input class="form-check-input" type="checkbox" id="is_active" name="is_active" {% if category.is_active %}checked{% endif %}>
+        <label class="form-check-label" for="is_active">Active</label>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">Save</button>
+        <a href="/dashboard/categories/" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+{% endblock %}
