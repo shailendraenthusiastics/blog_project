@@ -4,9 +4,6 @@ from .models import Blog, BlogCategory, BlogTag, BlogImage
 import os
 import re
 from django.utils.text import slugify
-
-
-
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
 
@@ -20,12 +17,10 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             password=validated_data['password']
         )
         return user
-
 class BlogImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = BlogImage
         fields = ['id', 'image']
-
     def validate_image(self, value):
         ext = os.path.splitext(value.name)[1].lower()
         valid_extensions = ['.jpg', '.jpeg', '.png']
@@ -35,13 +30,9 @@ class BlogImageSerializer(serializers.ModelSerializer):
         if value.size > limit:
             raise serializers.ValidationError("Image file size cannot exceed 5MB.")
         return value
-
-
 class RelatedNameField(serializers.PrimaryKeyRelatedField):
     def to_representation(self, value):
         return value.name
-
-
 class RelatedImageUrlField(serializers.PrimaryKeyRelatedField):
     def to_representation(self, value):
         if not value.image:
@@ -51,7 +42,6 @@ class RelatedImageUrlField(serializers.PrimaryKeyRelatedField):
         if request:
             return request.build_absolute_uri(url)
         return url
-
 class BlogSerializer(serializers.ModelSerializer):
     categories = RelatedNameField(
         queryset=BlogCategory.objects.all(),
@@ -77,17 +67,15 @@ class BlogSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'title', 'slug', 'short_description', 'description',
             'view_count',
-            'author', 'featured_image', 'gallery',
+            'author', 'author_name', 'featured_image', 'gallery',
             'categories', 'tags', 'is_active',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['author', 'slug', 'view_count']
-
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         request = self.context.get('request')
         gallery_images = instance.gallery.all()
-        
         if gallery_images:
             if request:
                 representation['gallery'] = [request.build_absolute_uri(img.image.url) for img in gallery_images]
@@ -97,12 +85,10 @@ class BlogSerializer(serializers.ModelSerializer):
             representation['gallery'] = []
         
         return representation
-
     def create(self, validated_data):
         categories = validated_data.pop('categories', [])
         tags = validated_data.pop('tags', [])
         gallery = validated_data.pop('gallery', [])
-        
         if not validated_data.get('slug'):
             generated_slug = slugify(validated_data['title'])
             if Blog.objects.filter(slug=generated_slug).exists():
@@ -115,9 +101,7 @@ class BlogSerializer(serializers.ModelSerializer):
             for image_data in gallery:
                 new_image = BlogImage.objects.create(image=image_data)
                 blog.gallery.add(new_image)
-
         return blog
-    
     def update(self, instance, validated_data):
         categories = validated_data.pop('categories', None)
         tags = validated_data.pop('tags', None)
@@ -135,7 +119,6 @@ class BlogSerializer(serializers.ModelSerializer):
             instance.categories.set(categories)
         if tags is not None:
             instance.tags.set(tags)
-        
         if gallery:
             instance.gallery.clear()  
             for image_data in gallery:
@@ -143,7 +126,6 @@ class BlogSerializer(serializers.ModelSerializer):
                 instance.gallery.add(new_image)
         
         return instance
-    
     def validate_slug(self, value):
         if value:
             if not re.match(r'^[-a-zA-Z0-9_]+$', value):
@@ -151,7 +133,6 @@ class BlogSerializer(serializers.ModelSerializer):
             if value.startswith('-') or value.endswith('-') or '--' in value:
                 raise serializers.ValidationError("Invalid slug format.")
         return value
-    
     def validate_title(self, value):
         if value != value.strip():
             raise serializers.ValidationError(
@@ -162,8 +143,37 @@ class BlogSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 "Multiple spaces between words are not allowed."
             )
-
         return value
+    def validate_short_description(self, value):
+        cleaned = value.strip()
+        if cleaned != value:
+            raise serializers.ValidationError(
+                "Short description cannot contain leading or trailing spaces."
+            )
+        if len(cleaned) < 10:
+            raise serializers.ValidationError(
+                "Short description must be at least 10 characters long."
+            )
+        if len(cleaned) > 255:
+            raise serializers.ValidationError(
+                "Short description cannot exceed 255 characters."
+            )
+        if re.search(r'\s{2,}', cleaned):
+            raise serializers.ValidationError(
+                "Multiple spaces between words are not allowed."
+            )
+        return cleaned
+    def validate_description(self, value):
+        cleaned = value.strip()
+        if cleaned != value:
+            raise serializers.ValidationError(
+                "Description cannot contain leading or trailing spaces."
+            )
+        if len(cleaned) < 50:
+            raise serializers.ValidationError(
+                "Description must be at least 50 characters long."
+            )
+        return cleaned
 
 
 
