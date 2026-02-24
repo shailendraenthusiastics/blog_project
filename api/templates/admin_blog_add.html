@@ -1,4 +1,5 @@
 {% extends "base_admin.html" %}
+{% load static %}
 {% block content %}
 <h3 class="mb-4">Add Blog</h3>
 
@@ -18,8 +19,12 @@
 
     <div class="mb-3">
         <label for="description" class="form-label">Full Description</label>
-        <textarea id="description" name="description" class="form-control" rows="8">{{ form_data.description|default:'' }}</textarea>
+        <textarea id="description" name="description" class="form-control django-ckeditor-widget" data-type="ckeditortype">{{ form_data.description|default:'' }}</textarea>
         <div id="description_error" class="text-danger small mt-1" role="alert">{{ form_errors.description|default:'' }}</div>
+        <div id="ckeditor_images_container" style="display: none; margin-top: 15px;">
+            <label class="form-label">Uploaded Images in Description</label>
+            <div id="ckeditor_images_preview" class="d-flex flex-wrap gap-2"></div>
+        </div>
     </div>
 
     <div class="mb-3">
@@ -55,6 +60,9 @@
         <input type="file" id="featured_image" name="featured_image" class="form-control">
         <div class="mt-2" id="featured_preview_container" style="display: none;">
             <img id="featured_preview" src="" alt="Featured Preview" class="img-fluid rounded" style="max-height: 220px;">
+            <div class="mt-2">
+                <button type="button" id="featured_remove_btn" class="btn btn-outline-danger btn-sm">Remove Selected Image</button>
+            </div>
         </div>
         <div id="featured_image_error" class="text-danger small mt-1" role="alert"></div>
         {% if form_errors.featured_image %}
@@ -76,6 +84,7 @@
         <label for="gallery" class="form-label">Gallery Images (Optional)</label>
         <input type="file" id="gallery" name="gallery" class="form-control" multiple>
         <div class="form-text">You can select multiple files, or add more later.</div>
+        <div id="gallery_preview" class="d-flex flex-wrap gap-2 mt-2"></div>
         <div id="gallery_error" class="text-danger small mt-1" role="alert"></div>
     </div>
 
@@ -92,8 +101,10 @@
 
 <script>
     (function () {
-        var maxSizeBytes = 5 * 1024 * 1024;
+        var maxSizeBytes = 2 * 1024 * 1024;
         var allowedExtensions = [".jpg", ".jpeg", ".png"];
+        var featuredSelectedFile = null;
+        var gallerySelectedFiles = [];
 
         function isAllowedImage(file) {
             if (!file) {
@@ -111,10 +122,98 @@
             if (!isAllowedImage(file)) {
                 return "Only JPG and PNG images are allowed.";
             }
-            if (file.size > maxSizeBytes) {
-                return "Image size must not exceed 5 MB.";
-            }
             return "";
+        }
+
+        function setInputFiles(inputElement, files) {
+            if (!inputElement) return;
+            var dataTransfer = new DataTransfer();
+            (files || []).forEach(function (file) {
+                dataTransfer.items.add(file);
+            });
+            inputElement.files = dataTransfer.files;
+        }
+
+        function fileNameWithJpg(name) {
+            var safeName = name || "image.jpg";
+            var lastDot = safeName.lastIndexOf(".");
+            if (lastDot <= 0) {
+                return safeName + ".jpg";
+            }
+            return safeName.slice(0, lastDot) + ".jpg";
+        }
+
+        function readImage(file) {
+            return new Promise(function (resolve, reject) {
+                var image = new Image();
+                var objectUrl = URL.createObjectURL(file);
+                image.onload = function () {
+                    URL.revokeObjectURL(objectUrl);
+                    resolve(image);
+                };
+                image.onerror = function () {
+                    URL.revokeObjectURL(objectUrl);
+                    reject(new Error("Unable to read image."));
+                };
+                image.src = objectUrl;
+            });
+        }
+
+        function canvasToBlob(canvas, quality) {
+            return new Promise(function (resolve, reject) {
+                canvas.toBlob(function (blob) {
+                    if (!blob) {
+                        reject(new Error("Unable to compress image."));
+                        return;
+                    }
+                    resolve(blob);
+                }, "image/jpeg", quality);
+            });
+        }
+
+        async function compressTo2Mb(file) {
+            if (!file || file.size <= maxSizeBytes) {
+                return file;
+            }
+
+            var image = await readImage(file);
+            var canvas = document.createElement("canvas");
+            var context = canvas.getContext("2d");
+            var width = image.naturalWidth || image.width;
+            var height = image.naturalHeight || image.height;
+            var scale = 1;
+            var compressedBlob = null;
+
+            while (scale >= 0.35) {
+                canvas.width = Math.max(1, Math.round(width * scale));
+                canvas.height = Math.max(1, Math.round(height * scale));
+                context.clearRect(0, 0, canvas.width, canvas.height);
+                context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+                for (var quality = 0.9; quality >= 0.4; quality -= 0.1) {
+                    var trialBlob = await canvasToBlob(canvas, Number(quality.toFixed(1)));
+                    if (trialBlob.size <= maxSizeBytes) {
+                        compressedBlob = trialBlob;
+                        break;
+                    }
+                    compressedBlob = trialBlob;
+                }
+
+                if (compressedBlob && compressedBlob.size <= maxSizeBytes) {
+                    break;
+                }
+
+                scale = Number((scale - 0.15).toFixed(2));
+            }
+
+            if (!compressedBlob) {
+                return file;
+            }
+
+            return new File([compressedBlob], fileNameWithJpg(file.name), {
+                type: "image/jpeg",
+                lastModified: Date.now(),
+            });
         }
 
         function setError(el, message) {
@@ -155,6 +254,17 @@
             return el ? el.value.trim() : "";
         }
 
+        function getEditorPlainText() {
+            var descriptionEl = document.getElementById("description");
+            var editor = descriptionEl ? descriptionEl._ckeditorInstance : null;
+            if (!editor) {
+                return getTextValue("description");
+            }
+            var wrapper = document.createElement("div");
+            wrapper.innerHTML = editor.getData() || "";
+            return (wrapper.textContent || wrapper.innerText || "").trim();
+        }
+
         function countSelected(id) {
             var el = document.getElementById(id);
             if (!el) return 0;
@@ -167,9 +277,11 @@
         var featuredInput = document.getElementById("featured_image");
         var featuredPreview = document.getElementById("featured_preview");
         var featuredPreviewContainer = document.getElementById("featured_preview_container");
+        var featuredRemoveBtn = document.getElementById("featured_remove_btn");
         var galleryInput = document.getElementById("gallery");
         var featuredError = document.getElementById("featured_image_error");
         var galleryError = document.getElementById("gallery_error");
+        var galleryPreview = document.getElementById("gallery_preview");
         var titleError = document.getElementById("title_error");
         var titleInput = document.getElementById("title");
         var authorNameError = document.getElementById("author_name_error");
@@ -236,57 +348,131 @@
         }
 
         if (featuredInput) {
-            featuredInput.addEventListener("change", function () {
+            featuredInput.addEventListener("change", async function () {
                 var file = featuredInput.files && featuredInput.files[0];
                 var error = file ? validateFile(file) : "";
                 if (error) {
-                    featuredInput.value = "";
+                    featuredSelectedFile = null;
+                    setInputFiles(featuredInput, []);
                     if (featuredPreview) {
                         featuredPreview.src = "";
                     }
                     if (featuredPreviewContainer) {
                         featuredPreviewContainer.style.display = "none";
                     }
-                } else if (file && featuredPreview) {
-                    featuredPreview.src = URL.createObjectURL(file);
+                    setError(featuredError, error);
+                    return;
+                }
+
+                if (!file) {
+                    return;
+                }
+
+                try {
+                    var compressed = await compressTo2Mb(file);
+                    featuredSelectedFile = compressed;
+                    setInputFiles(featuredInput, [compressed]);
+                    if (featuredPreview) {
+                        featuredPreview.src = URL.createObjectURL(compressed);
+                    }
                     if (featuredPreviewContainer) {
                         featuredPreviewContainer.style.display = "block";
                     }
+                    setError(featuredError, "");
+                } catch (compressionError) {
+                    featuredSelectedFile = null;
+                    setInputFiles(featuredInput, []);
+                    if (featuredPreviewContainer) {
+                        featuredPreviewContainer.style.display = "none";
+                    }
+                    setError(featuredError, "Could not process selected image.");
                 }
-                setError(featuredError, error);
+            });
+        }
+
+        if (featuredRemoveBtn) {
+            featuredRemoveBtn.addEventListener("click", function () {
+                featuredSelectedFile = null;
+                if (featuredInput) {
+                    setInputFiles(featuredInput, []);
+                    featuredInput.value = "";
+                }
+                if (featuredPreview) {
+                    featuredPreview.src = "";
+                }
+                if (featuredPreviewContainer) {
+                    featuredPreviewContainer.style.display = "none";
+                }
+                setError(featuredError, "");
+            });
+        }
+
+        function renderGalleryPreview(files) {
+            if (!galleryPreview) {
+                return;
+            }
+            galleryPreview.innerHTML = "";
+            Array.prototype.slice.call(files || []).forEach(function (file, index) {
+                var imageUrl = URL.createObjectURL(file);
+                var item = document.createElement("div");
+                item.className = "position-relative";
+
+                var image = document.createElement("img");
+                image.src = imageUrl;
+                image.alt = file.name || "Gallery Preview";
+                image.className = "rounded border";
+                image.style.width = "100px";
+                image.style.height = "100px";
+                image.style.objectFit = "cover";
+                image.onload = function () {
+                    URL.revokeObjectURL(imageUrl);
+                };
+
+                var removeBtn = document.createElement("button");
+                removeBtn.type = "button";
+                removeBtn.className = "btn btn-sm btn-danger position-absolute top-0 end-0";
+                removeBtn.style.lineHeight = "1";
+                removeBtn.style.padding = "0.05rem 0.3rem";
+                removeBtn.textContent = "×";
+                removeBtn.addEventListener("click", function () {
+                    gallerySelectedFiles.splice(index, 1);
+                    setInputFiles(galleryInput, gallerySelectedFiles);
+                    renderGalleryPreview(gallerySelectedFiles);
+                    setError(galleryError, "");
+                });
+
+                item.appendChild(image);
+                item.appendChild(removeBtn);
+                galleryPreview.appendChild(item);
             });
         }
 
         if (galleryInput) {
-            galleryInput.addEventListener("change", function () {
-                if (!galleryInput._selectedFiles) {
-                    galleryInput._selectedFiles = [];
-                }
+            galleryInput.addEventListener("change", async function () {
                 var incoming = Array.prototype.slice.call(galleryInput.files || []);
                 if (incoming.length === 0) {
                     return;
                 }
 
                 var errors = [];
-                var validIncoming = [];
-                incoming.forEach(function (file) {
+                for (var i = 0; i < incoming.length; i += 1) {
+                    var file = incoming[i];
                     var error = validateFile(file);
                     if (error) {
                         errors.push(file.name + ": " + error);
-                    } else {
-                        validIncoming.push(file);
+                        continue;
                     }
-                });
-
-                if (validIncoming.length > 0) {
-                    galleryInput._selectedFiles = galleryInput._selectedFiles.concat(validIncoming);
+                    try {
+                        var compressed = await compressTo2Mb(file);
+                        gallerySelectedFiles.push(compressed);
+                    } catch (compressionError) {
+                        errors.push(file.name + ": Could not process image.");
+                    }
                 }
 
-                var dataTransfer = new DataTransfer();
-                galleryInput._selectedFiles.forEach(function (file) {
-                    dataTransfer.items.add(file);
-                });
-                galleryInput.files = dataTransfer.files;
+                setInputFiles(galleryInput, gallerySelectedFiles);
+                renderGalleryPreview(gallerySelectedFiles);
+                galleryInput.value = "";
 
                 setError(galleryError, errors.join(" "));
             });
@@ -301,8 +487,12 @@
                 var rawAuthorName = document.getElementById("author_name") ? document.getElementById("author_name").value : "";
                 var shortDescription = getTextValue("short_description");
                 var rawShortDescription = shortDescriptionInput ? shortDescriptionInput.value : "";
-                var description = getTextValue("description");
-                var rawDescription = descriptionInput ? descriptionInput.value : "";
+                var descriptionEditor = descriptionInput ? descriptionInput._ckeditorInstance : null;
+                if (descriptionEditor && descriptionInput) {
+                    descriptionInput.value = descriptionEditor.getData();
+                }
+                var description = getEditorPlainText();
+                var rawDescription = description;
 
                 if (!title) {
                     setError(titleError, "Title is required.");
@@ -393,7 +583,7 @@
 
                 if (galleryInput) {
                     var galleryErrors = [];
-                    Array.prototype.slice.call(galleryInput.files || []).forEach(function (file) {
+                    Array.prototype.slice.call(gallerySelectedFiles || []).forEach(function (file) {
                         var error = validateFile(file);
                         if (error) {
                             galleryErrors.push(file.name + ": " + error);
@@ -413,5 +603,155 @@
             });
         }
     })();
+</script>
+<script src="https://cdn.ckeditor.com/ckeditor5/40.0.0/classic/ckeditor.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    class MyUploadAdapter {
+        constructor(loader) {
+            this.loader = loader;
+        }
+
+        upload() {
+            return this.loader.file.then(file => {
+                return new Promise((resolve, reject) => {
+
+                    const formData = new FormData();
+                    formData.append("upload", file);
+
+                    const csrfToken =
+                        document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+                    fetch("/ckeditor/upload/", {
+                        method: "POST",
+                        body: formData,
+                        headers: {
+                            "X-CSRFToken": csrfToken
+                        },
+                        credentials: "same-origin"
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        resolve({
+                            default: data.url
+                        });
+                    })
+                    .catch(err => reject(err));
+
+                });
+            });
+        }
+
+        abort() {}
+    }
+
+    function MyUploadAdapterPlugin(editor) {
+        editor.plugins.get("FileRepository").createUploadAdapter =
+            loader => new MyUploadAdapter(loader);
+    }
+
+    function renderCKEditorImages(editor) {
+        var container = document.getElementById("ckeditor_images_container");
+        var preview = document.getElementById("ckeditor_images_preview");
+        if (!container || !preview) return;
+
+        var html = editor.getData();
+        var parser = new DOMParser();
+        var doc = parser.parseFromString(html, "text/html");
+        var images = doc.querySelectorAll("img");
+        
+        preview.innerHTML = "";
+        if (images.length === 0) {
+            container.style.display = "none";
+            return;
+        }
+        
+        container.style.display = "block";
+        
+        images.forEach(function (img, index) {
+            var item = document.createElement("div");
+            item.className = "position-relative";
+            
+            var imgClone = document.createElement("img");
+            imgClone.src = img.src || "";
+            imgClone.alt = img.alt || "Editor Image";
+            imgClone.className = "rounded border";
+            imgClone.style.width = "100px";
+            imgClone.style.height = "100px";
+            imgClone.style.objectFit = "cover";
+            
+            var removeBtn = document.createElement("button");
+            removeBtn.type = "button";
+            removeBtn.className = "btn btn-sm btn-danger position-absolute top-0 end-0";
+            removeBtn.style.lineHeight = "1";
+            removeBtn.style.padding = "0.05rem 0.3rem";
+            removeBtn.textContent = "×";
+            removeBtn.addEventListener("click", function (e) {
+                e.preventDefault();
+                var currentHtml = editor.getData();
+                var currentDoc = parser.parseFromString(currentHtml, "text/html");
+                var currentImages = currentDoc.querySelectorAll("img");
+                if (index < currentImages.length) {
+                    var imgToRemove = currentImages[index];
+                    var parent = imgToRemove.parentNode;
+                    if (parent && parent.tagName === "FIGURE") {
+                        parent.remove();
+                    } else {
+                        imgToRemove.remove();
+                    }
+                    var updatedHtml = new XMLSerializer().serializeToString(currentDoc.body).replace(/<body[^>]*>/, "").replace(/<\/body>/, "");
+                    editor.setData(updatedHtml);
+                    renderCKEditorImages(editor);
+                }
+            });
+            
+            item.appendChild(imgClone);
+            item.appendChild(removeBtn);
+            preview.appendChild(item);
+        });
+    }
+
+    const textarea = document.querySelector("#description");
+
+    if (!textarea) {
+        console.error("Description textarea not found");
+        return;
+    }
+
+    ClassicEditor.create(textarea, {
+        extraPlugins: [MyUploadAdapterPlugin],
+        toolbar: [
+            "heading","|",
+            "bold","italic","link",
+            "bulletedList","numberedList",
+            "imageUpload",
+            "undo","redo"
+        ]
+    })
+    .then(editor => {
+        textarea._ckeditorInstance = editor;
+
+        var syncEditorToTextarea = function () {
+            textarea.value = editor.getData();
+        };
+
+        editor.model.document.on("change:data", function () {
+            syncEditorToTextarea();
+            renderCKEditorImages(editor);
+        });
+
+        var form = document.querySelector("form");
+        if (form) {
+            form.addEventListener("submit", syncEditorToTextarea);
+        }
+
+        syncEditorToTextarea();
+        renderCKEditorImages(editor);
+        console.log("CKEditor Loaded");
+    })
+    .catch(error => console.error(error));
+
+});
 </script>
 {% endblock %}
