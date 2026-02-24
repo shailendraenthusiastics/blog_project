@@ -1,0 +1,91 @@
+{% extends "base_admin.html" %}
+{% block content %}
+{% if blog_data %}
+<div class="mb-3">
+    <a href="/dashboard/blogs/" class="btn btn-secondary btn-sm">← Back to List</a>
+    <a href="/dashboard/blogs/{{ blog.id }}/edit/" class="btn btn-primary btn-sm">Edit</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <article class="blog-detail">
+            <h1 class="mb-3">{{ blog_data.title }}</h1>
+            
+            <div class="blog-meta text-muted mb-4">
+                <p class="mb-2">
+                    <strong>Author:</strong> {{ blog_data.author_name|default:"Unknown" }} | 
+                    <strong>Views:</strong> {{ blog_data.view_count }}
+                </p>
+                <p class="mb-2">
+                    <strong>Created:</strong> {{ blog_data.created_at|default:"N/A" }}
+                </p>
+                <p class="mb-2">
+                    <strong>Updated:</strong> {{ blog_data.updated_at|default:"N/A" }}
+                </p>
+                <p>
+                    <strong>Status:</strong> 
+                    <span class="badge {% if blog.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                        {% if blog.is_active %}Active{% else %}Inactive{% endif %}
+                    </span>
+                </p>
+            </div>
+
+            <img src="{{ blog_data.featured_image }}" alt="{{ blog_data.title }}" class="img-fluid w-100 mb-4 rounded" style="max-height: 500px; object-fit: cover;">
+            
+            <div class="mb-4">
+                <h5>Short Description</h5>
+                <p class="lead">{{ blog_data.short_description|default:"" }}</p>
+            </div>
+
+            <div class="mb-4">
+                <h5>Categories</h5>
+                <p>
+                    {% if blog_data.categories %}
+                        {% for category in blog_data.categories %}
+                            <span class="badge bg-info">{{ category }}</span>
+                        {% endfor %}
+                    {% else %}
+                        <span>None</span>
+                    {% endif %}
+                </p>
+            </div>
+
+            <div class="mb-4">
+                <h5>Tags</h5>
+                <p>
+                    {% if blog_data.tags %}
+                        {% for tag in blog_data.tags %}
+                            <span class="badge bg-warning">{{ tag }}</span>
+                        {% endfor %}
+                    {% else %}
+                        <span>None</span>
+                    {% endif %}
+                </p>
+            </div>
+
+            <hr>
+
+            <div class="mb-4">
+                <h5>Description</h5>
+                <div class="blog-content">{{ blog_data.description|linebreaks }}</div>
+            </div>
+
+            {% if blog_data.gallery %}
+            <div class="mb-4">
+                <h5>Gallery</h5>
+                <div class="row g-3 mt-4">
+                    {% for image in blog_data.gallery %}
+                    <div class="col-md-4">
+                        <img src="{{ image }}" class="img-fluid rounded" style="height: 250px; object-fit: cover;">
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </article>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-danger">Blog not found</div>
+{% endif %}
+{% endblock %}

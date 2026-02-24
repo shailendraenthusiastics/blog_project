@@ -176,4 +176,126 @@ class BlogSerializer(serializers.ModelSerializer):
         return cleaned
 
 
+class BlogListSerializer(serializers.ModelSerializer):
+    categories = RelatedNameField(
+        queryset=BlogCategory.objects.all(),
+        many=True
+    )
+    tags = RelatedNameField(
+        queryset=BlogTag.objects.all(),
+        many=True
+    )
+
+    class Meta:
+        model = Blog
+        fields = [
+            'id', 'title', 'slug',
+            'view_count', 'author_name', 'featured_image',
+            'categories', 'tags', 'gallery'
+        ]
+    
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        gallery_images = instance.gallery.all()
+        if gallery_images:
+            request = self.context.get('request')
+            representation['gallery'] = []
+            for img in gallery_images:
+                url = img.image.url
+                if request:
+                    url = request.build_absolute_uri(url)
+                representation['gallery'].append(url)
+        else:
+            representation['gallery'] = []
+        
+        return representation
+
+
+class BlogDetailSerializer(serializers.ModelSerializer):
+    categories = RelatedNameField(
+        queryset=BlogCategory.objects.all(),
+        many=True
+    )
+    tags = RelatedNameField(
+        queryset=BlogTag.objects.all(),
+        many=True
+    )
+    created_at = serializers.DateTimeField(format="%d %b %Y, %I:%M %p")
+    updated_at = serializers.DateTimeField(format="%d %b %Y, %I:%M %p")
+
+    class Meta:
+        model = Blog
+        fields = [
+            'id', 'title', 'short_description', 'description',
+            'view_count', 'author_name', 'featured_image',
+            'categories', 'tags', 'created_at', 'updated_at'
+        ]
+    
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        gallery_images = instance.gallery.all()
+        if gallery_images:
+            request = self.context.get('request')
+            representation['gallery'] = []
+            for img in gallery_images:
+                url = img.image.url
+                if request:
+                    url = request.build_absolute_uri(url)
+                representation['gallery'].append(url)
+        else:
+            representation['gallery'] = []
+        
+        return representation
+
+
+class BlogAdminListSerializer(serializers.ModelSerializer):
+    created_at = serializers.DateTimeField(format="%d %b %Y, %I:%M %p")
+    updated_at = serializers.DateTimeField(format="%d %b %Y, %I:%M %p")
+    
+    class Meta:
+        model = Blog
+        fields = [
+            'id', 'title', 'slug', 'author_name', 'featured_image', 
+            'created_at', 'updated_at', 'is_active'
+        ]
+    
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        if representation.get('featured_image'):
+            representation['featured_image'] = instance.featured_image.url
+        return representation
+
+
+class BlogAdminDetailSerializer(serializers.ModelSerializer):
+    categories = RelatedNameField(
+        queryset=BlogCategory.objects.all(),
+        many=True
+    )
+    tags = RelatedNameField(
+        queryset=BlogTag.objects.all(),
+        many=True
+    )
+    created_at = serializers.DateTimeField(format="%d %b %Y, %I:%M %p")
+    updated_at = serializers.DateTimeField(format="%d %b %Y, %I:%M %p")
+
+    class Meta:
+        model = Blog
+        fields = [
+            'id', 'title', 'slug', 'short_description', 'description',
+            'view_count', 'author_name', 'featured_image',
+            'categories', 'tags', 'is_active',
+            'created_at', 'updated_at'
+        ]
+    
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        gallery_images = instance.gallery.all()
+        if gallery_images:
+            representation['gallery'] = [img.image.url for img in gallery_images]
+        else:
+            representation['gallery'] = []
+        
+        return representation
+
+
 
