@@ -209,8 +209,6 @@
         var tagsError = document.getElementById("tags_error");
         var addGalleryBtn = document.getElementById("add_gallery_btn");
         var form = document.querySelector("form");
-
-        // Enable click-to-toggle for multi-select dropdowns
         var categoriesSelect = document.getElementById("categories");
         var tagsSelect = document.getElementById("tags");
 
@@ -229,8 +227,6 @@
 
         enableClickToggle(categoriesSelect);
         enableClickToggle(tagsSelect);
-
-        // Clear errors on input change
         if (titleInput) {
             titleInput.addEventListener("input", function() {
                 setError(titleError, "");
@@ -496,8 +492,6 @@
         form.submit();
     }
 </script>
-
-<!-- Include CKEditor Script -->
 <script src="https://cdn.ckeditor.com/ckeditor5/40.0.0/classic/ckeditor.js"></script>
 <script>
     function renderCKEditorImages(editor) {
@@ -560,8 +554,6 @@
             preview.appendChild(item);
         });
     }
-
-    // Custom upload adapter for CKEditor 5
     class MyUploadAdapter {
         constructor(loader) {
             this.loader = loader;
@@ -572,8 +564,6 @@
                 return new Promise((resolve, reject) => {
                     const formData = new FormData();
                     formData.append('upload', file);
-                    
-                    // Get CSRF token
                     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
                     if (csrfToken) {
                         formData.append('csrfmiddlewaretoken', csrfToken);
@@ -628,7 +618,7 @@
         }
 
         abort() {
-            // Handle abort if needed
+            
         }
     }
 
@@ -644,15 +634,11 @@
             toolbar: ['heading', '|', 'bold', 'italic', 'link', 'blockQuote', 'numberedList', 'bulletedList', 'imageUpload', 'undo', 'redo']
         })
         .then(editor => {
-            // Store editor instance for syncing
             document.querySelector('#description')._ckeditorInstance = editor;
-            
-            // Render images on change
             editor.model.document.on('change:data', function () {
                 renderCKEditorImages(editor);
             });
             
-            // Initial render
             renderCKEditorImages(editor);
         })
         .catch(error => {

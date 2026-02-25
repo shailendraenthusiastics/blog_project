@@ -57,10 +57,12 @@
                 <td>
                     <div class="d-flex gap-1">
                         <a href="/dashboard/blogs/{{ blog.id }}/edit/" class="btn btn-sm btn-outline-primary" title="Edit Blog">Edit</a>
+                        {% if filter_status != 'inactive' %}
                         <form method="post" action="/dashboard/blogs/{{ blog.id }}/delete/" style="display:inline;" onsubmit="return confirm('Delete this blog?');">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Blog">Delete</button>
                         </form>
+                        {% endif %}
                     </div>
                 </td>
             </tr>

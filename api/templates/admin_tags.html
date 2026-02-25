@@ -39,10 +39,12 @@
                     <td>
                         <div class="d-flex gap-2">
                             <a href="/dashboard/tags/{{ tag.id }}/edit/" class="btn btn-sm btn-outline-primary">Edit</a>
+                            {% if filter_status != 'inactive' %}
                             <form method="post" action="/dashboard/tags/{{ tag.id }}/delete/" onsubmit="return confirm('Delete this tag?');">
                                 {% csrf_token %}
                                 <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
                             </form>
+                            {% endif %}
                         </div>
                     </td>
                 </tr>
