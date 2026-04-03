@@ -114,15 +114,11 @@ STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 def _database_from_env():
     database_url = os.environ.get("DATABASE_URL", "").strip()
-    if not database_url:
-        return {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
+    if database_url:
+        parsed = urlparse(database_url)
+        if parsed.scheme not in ("postgres", "postgresql"):
+            raise ValueError("DATABASE_URL must use postgres/postgresql scheme.")
 
-    parsed = urlparse(database_url)
-
-    if parsed.scheme in ("postgres", "postgresql"):
         return {
             "ENGINE": "django.db.backends.postgresql",
             "NAME": parsed.path.lstrip("/"),
@@ -134,16 +130,13 @@ def _database_from_env():
             "OPTIONS": {"sslmode": "require"},
         }
 
-    if parsed.scheme == "sqlite":
-        db_path = parsed.path.lstrip("/")
-        return {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / db_path if db_path else BASE_DIR / "db.sqlite3",
-        }
-
     return {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": os.environ.get("DB_ENGINE", "django.db.backends.postgresql"),
+        "NAME": os.environ.get("DB_NAME", "blog"),
+        "USER": os.environ.get("DB_USER", "postgres"),
+        "PASSWORD": os.environ.get("DB_PASSWORD", "Sky1234@"),
+        "HOST": os.environ.get("DB_HOST", "localhost"),
+        "PORT": os.environ.get("DB_PORT", "5432"),
     }
 
 

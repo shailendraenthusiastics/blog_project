@@ -1,0 +1,174 @@
+[
+{
+  "model": "auth.user",
+  "pk": 1,
+  "fields": {
+    "password": "!",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "admin",
+    "first_name": "",
+    "last_name": "",
+    "email": "",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-04-03T15:55:21.400Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "api.blogcategory",
+  "pk": 1,
+  "fields": {
+    "name": "Nature",
+    "slug": "nature",
+    "is_active": true,
+    "created_at": "2026-04-03T15:55:21.417Z",
+    "updated_at": "2026-04-03T15:55:21.417Z"
+  }
+},
+{
+  "model": "api.blogcategory",
+  "pk": 2,
+  "fields": {
+    "name": "Travel",
+    "slug": "travel",
+    "is_active": true,
+    "created_at": "2026-04-03T15:55:21.420Z",
+    "updated_at": "2026-04-03T15:55:21.420Z"
+  }
+},
+{
+  "model": "api.blogcategory",
+  "pk": 3,
+  "fields": {
+    "name": "Adventure",
+    "slug": "adventure",
+    "is_active": true,
+    "created_at": "2026-04-03T15:55:21.421Z",
+    "updated_at": "2026-04-03T15:55:21.421Z"
+  }
+},
+{
+  "model": "api.blogtag",
+  "pk": 1,
+  "fields": {
+    "name": "Mountains",
+    "slug": "mountains",
+    "created_at": "2026-04-03T15:55:21.426Z",
+    "updated_at": "2026-04-03T15:55:21.426Z",
+    "is_active": true
+  }
+},
+{
+  "model": "api.blogtag",
+  "pk": 2,
+  "fields": {
+    "name": "Trekking",
+    "slug": "trekking",
+    "created_at": "2026-04-03T15:55:21.428Z",
+    "updated_at": "2026-04-03T15:55:21.428Z",
+    "is_active": true
+  }
+},
+{
+  "model": "api.blogtag",
+  "pk": 3,
+  "fields": {
+    "name": "Adventure",
+    "slug": "adventure",
+    "created_at": "2026-04-03T15:55:21.430Z",
+    "updated_at": "2026-04-03T15:55:21.430Z",
+    "is_active": true
+  }
+},
+{
+  "model": "api.blogtag",
+  "pk": 4,
+  "fields": {
+    "name": "Beach",
+    "slug": "beach",
+    "created_at": "2026-04-03T15:55:21.432Z",
+    "updated_at": "2026-04-03T15:55:21.432Z",
+    "is_active": true
+  }
+},
+{
+  "model": "api.blogtag",
+  "pk": 5,
+  "fields": {
+    "name": "Sea",
+    "slug": "sea",
+    "created_at": "2026-04-03T15:55:21.433Z",
+    "updated_at": "2026-04-03T15:55:21.433Z",
+    "is_active": true
+  }
+},
+{
+  "model": "api.blogtag",
+  "pk": 6,
+  "fields": {
+    "name": "Travel",
+    "slug": "travel",
+    "created_at": "2026-04-03T15:55:21.435Z",
+    "updated_at": "2026-04-03T15:55:21.435Z",
+    "is_active": true
+  }
+},
+{
+  "model": "api.blog",
+  "pk": 1,
+  "fields": {
+    "title": "The Magic Of Mountains A Journey Above The Clouds",
+    "slug": "the-magic-of-mountains-a-journey-above-the-clouds",
+    "short_description": "Discover The Peaceful And Breathtaking Beauty Of Mountains.",
+    "description": "<p>Mountains have always attracted travelers with their majestic beauty and calm atmosphere. Whether it’s the Himalayas or any local hill station, the experience of standing above the clouds is unforgettable. The fresh air, scenic views, and silence of nature help you disconnect from stress and reconnect with yourself. Trekking in mountains not only builds physical strength but also mental peace.</p>",
+    "view_count": 3,
+    "author_name": "Shailendra",
+    "author": 1,
+    "featured_image": "featured/1a7262ea69a6ac0dcfcdc1a41b001f73.jpg",
+    "is_active": true,
+    "created_at": "2026-04-03T15:55:21.439Z",
+    "updated_at": "2026-04-03T15:55:21.439Z",
+    "gallery": [],
+    "categories": [
+      1,
+      2
+    ],
+    "tags": [
+      1,
+      2,
+      3
+    ]
+  }
+},
+{
+  "model": "api.blog",
+  "pk": 2,
+  "fields": {
+    "title": "Exploring The Calm And Adventure Of Beaches",
+    "slug": "exploring-the-calm-and-adventure-of-beaches",
+    "short_description": "Beaches Offer Both Relaxation And Thrilling Activities.",
+    "description": "<p>Beaches are the perfect blend of relaxation and adventure. From enjoying a peaceful sunset to engaging in thrilling water sports like surfing and jet skiing, beaches offer something for everyone. The sound of waves and the vast ocean horizon create a calming environment, making it a perfect escape from daily life.</p>",
+    "view_count": 2,
+    "author_name": "Shailendra",
+    "author": 1,
+    "featured_image": "featured/photo-1676836050373-76bf93d08a41.jpg",
+    "is_active": true,
+    "created_at": "2026-04-03T15:55:21.462Z",
+    "updated_at": "2026-04-03T15:55:21.462Z",
+    "gallery": [],
+    "categories": [
+      1,
+      3
+    ],
+    "tags": [
+      1,
+      4,
+      5,
+      6
+    ]
+  }
+}
+]
