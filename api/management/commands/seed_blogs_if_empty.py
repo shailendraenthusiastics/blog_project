@@ -1,7 +1,10 @@
 from pathlib import Path
+import os
 
 from django.conf import settings
+from django.db import connection
 from django.core.management import BaseCommand, call_command
+from django.core.management.color import no_style
 from django.contrib.auth.models import User
 
 from api.models import Blog, BlogCategory, BlogTag
@@ -61,11 +64,21 @@ class Command(BaseCommand):
     help = "Seed initial blog data from fixture when blog table is empty."
 
     def _seed_from_embedded_data(self):
+        admin_username = os.environ.get("ADMIN_USERNAME", "admin")
+        admin_password = os.environ.get("ADMIN_PASSWORD", "admin123")
+
         for user_data in SEED_DATA["users"]:
-            User.objects.update_or_create(
+            user, created = User.objects.get_or_create(
                 id=user_data["id"],
-                defaults={"username": user_data["username"]},
+                defaults={"username": admin_username},
             )
+            if created or user.username != admin_username:
+                user.username = admin_username
+            user.is_staff = True
+            user.is_superuser = True
+            user.is_active = True
+            user.set_password(admin_password)
+            user.save()
 
         for category in SEED_DATA["categories"]:
             BlogCategory.objects.update_or_create(
@@ -105,7 +118,32 @@ class Command(BaseCommand):
             blog.categories.set(blog_data["categories"])
             blog.tags.set(blog_data["tags"])
 
+    def _ensure_admin_superuser(self):
+        admin_username = os.environ.get("ADMIN_USERNAME", "admin")
+        admin_password = os.environ.get("ADMIN_PASSWORD", "admin123")
+
+        user, _ = User.objects.get_or_create(username=admin_username)
+        user.is_staff = True
+        user.is_superuser = True
+        user.is_active = True
+        user.set_password(admin_password)
+        user.save()
+
+    def _reset_sequences(self):
+        sequence_sql = connection.ops.sequence_reset_sql(
+            no_style(), [User, BlogCategory, BlogTag, Blog]
+        )
+        if not sequence_sql:
+            return
+
+        with connection.cursor() as cursor:
+            for statement in sequence_sql:
+                cursor.execute(statement)
+
     def handle(self, *args, **options):
+        self._ensure_admin_superuser()
+        self._reset_sequences()
+
         existing_count = Blog.objects.count()
         if existing_count > 0:
             self.stdout.write(
@@ -147,5 +185,7 @@ class Command(BaseCommand):
                 )
             )
             self._seed_from_embedded_data()
+
+        self._reset_sequences()
 
         self.stdout.write(self.style.SUCCESS("Seeded initial blog data successfully."))
