@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h3>All Blogs</h3>
+
+<div class="card p-3 mb-3">
+<div class="row">
+<div class="col-md-3">
+<input type="text" id="searchInput" class="form-control" placeholder="Search" value="{{ search }}">
+</div>
+<div class="col-md-3">
+<select id="categoryFilter" class="form-select">
+<option value="">All Categories</option>
+{% for cat in categories %}
+<option value="{{ cat.name }}" {% if cat.name == category %}selected{% endif %}>{{ cat.name }}</option>
+{% endfor %}
+</select>
+</div>
+<div class="col-md-3">
+<select id="tagFilter" class="form-select">
+<option value="">All Tags</option>
+{% for t in tags %}
+<option value="{{ t.name }}" {% if t.name == tag %}selected{% endif %}>{{ t.name }}</option>
+{% endfor %}
+</select>
+</div>
+<div class="col-md-3">
+<button onclick="applyFilters()" class="btn btn-primary w-100">Filter</button>
+</div>
+</div>
+</div>
+
+<div class="row" id="blogContainer">
+    {% for blog in blogs %}
+    <div class="col-md-4 mb-3" data-blog-id="{{ blog.id }}">
+        <div class="card shadow-sm h-100">
+            <div class="card-body pb-0">
+                <h5>
+                    <a href="/blog-detail/?id={{ blog.id }}" style="text-decoration: none; color: inherit; cursor: pointer;">
+                        {{ blog.title }}
+                    </a>
+                </h5>
+                {% if blog.featured_image %}
+                <a href="/blog-detail/?id={{ blog.id }}" style="text-decoration: none;">
+                    <img src="{{ blog.featured_image.url }}" class="card-img" style="height: 200px; object-fit: cover; cursor: pointer; width: 100%; margin: 10px -12px 0 -12px; border-radius: 0 0 0.25rem 0.25rem;">
+                </a>
+                {% endif %}
+                {% if blog.gallery %}
+                <div style="margin-top: 8px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;">
+                    {% for gallery_img in blog.gallery.all %}
+                    <a href="/blog-detail/?id={{ blog.id }}" style="text-decoration: none;">
+                        <img src="{{ gallery_img.image.url }}" style="height: 60px; object-fit: cover; width: 100%; border-radius: 4px; cursor: pointer;">
+                    </a>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-body pt-2">
+                <p class="text-muted small mb-2">Author: {{ blog.author_name|default:'Unknown' }} | 👁 <span class="blog-view-count">{{ blog.view_count }}</span> views</p>
+                <p class="text-muted small mb-1"><strong>Categories:</strong>
+                    {% for category in blog.categories.all %}
+                        {{ category.name }}{% if not forloop.last %}, {% endif %}
+                    {% empty %}
+                        N/A
+                    {% endfor %}
+                </p>
+                <p class="text-muted small mb-2"><strong>Tags:</strong>
+                    {% for tag in blog.tags.all %}
+                        {{ tag.name }}{% if not forloop.last %}, {% endif %}
+                    {% empty %}
+                        N/A
+                    {% endfor %}
+                </p>
+                <a href="/blog-detail/?id={{ blog.id }}" class="btn btn-info btn-sm">View</a>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="alert alert-info">No blogs found</div>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+function applyFilters(){
+    const searchInput = document.getElementById("searchInput");
+    const categoryFilter = document.getElementById("categoryFilter");
+    const tagFilter = document.getElementById("tagFilter");
+    const search = searchInput ? searchInput.value : "";
+    const category = categoryFilter ? categoryFilter.value : "";
+    const tag = tagFilter ? tagFilter.value : "";
+    let params=[];
+    if(search) params.push(`search=${encodeURIComponent(search)}`);
+    if(category) params.push(`category=${encodeURIComponent(category)}`);
+    if(tag) params.push(`tag=${encodeURIComponent(tag)}`);
+    const query = params.length ? "?" + params.join("&") : "";
+    window.location.href = '/api/list/' + query;
+}
+
+document.addEventListener('DOMContentLoaded', async function() {
+    await Promise.allSettled([
+        loadCategoriesForFilter(),
+        loadTagsForFilter()
+    ]);
+});
+
+window.addEventListener('pageshow', function (event) {
+    const navigationEntries = performance.getEntriesByType('navigation');
+    const isBackForward = event.persisted || (navigationEntries.length > 0 && navigationEntries[0].type === 'back_forward');
+
+    if (isBackForward) {
+        window.location.reload();
+    }
+});
+</script>
+
+{% endblock %}

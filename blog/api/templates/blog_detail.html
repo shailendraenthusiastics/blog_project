@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block content %}
+{% if blog_data %}
+<div id="blogDetail" class="container py-5">
+    <article class="blog-detail">
+        <h1 class="mb-3">{{ blog_data.title }}</h1>
+        
+        <div class="blog-meta text-muted mb-4">
+            <p class="mb-2">
+                <strong>Author:</strong> {{ blog_data.author_name|default:"Unknown" }} | 
+                <strong>Views:</strong> {{ blog_data.view_count }}
+            </p>
+            <p class="mb-2">
+                <strong>Created:</strong> {{ blog_data.created_at|default:"N/A" }}
+            </p>
+            <p>
+                <strong>Updated:</strong> {{ blog_data.updated_at|default:"N/A" }}
+            </p>
+        </div>
+
+        <img src="{{ blog_data.featured_image }}" alt="{{ blog_data.title }}" class="img-fluid w-100 mb-4 rounded" style="max-height: 500px; object-fit: cover;">
+        
+        <div class="mb-4">
+            <h5>Short Description</h5>
+            <p class="lead">{{ blog_data.short_description|default:"" }}</p>
+        </div>
+
+        <div class="mb-4">
+            <h5>Categories</h5>
+            <p>
+                {% if blog_data.categories %}
+                    {% for category in blog_data.categories %}
+                        <span class="badge bg-primary">{{ category }}</span>
+                    {% endfor %}
+                {% else %}
+                    <span>None</span>
+                {% endif %}
+            </p>
+        </div>
+
+        <div class="mb-4">
+            <h5>Tags</h5>
+            <p>
+                {% if blog_data.tags %}
+                    {% for tag in blog_data.tags %}
+                        <span class="badge bg-secondary">{{ tag }}</span>
+                    {% endfor %}
+                {% else %}
+                    <span>None</span>
+                {% endif %}
+            </p>
+        </div>
+
+        <hr>
+
+        <div class="mb-4">
+            <h5>Description</h5>
+            <div class="blog-content">{{ blog_data.description|safe }}</div>
+        </div>
+
+        {% if blog_data.gallery %}
+        <div class="mb-4">
+            <h5>Gallery</h5>
+            <div class="row g-3 mt-4">
+                {% for image in blog_data.gallery %}
+                <div class="col-md-4">
+                    <img src="{{ image }}" class="img-fluid rounded" style="height: 250px; object-fit: cover;">
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </article>
+</div>
+{% else %}
+<div id="blogDetail" class="container py-5">
+    <div class="alert alert-danger">Blog not found</div>
+</div>
+{% endif %}
+{% if blog_data %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const blogId = "{{ blog_data.id }}";
+    if (!blogId) {
+        return;
+    }
+
+    sessionStorage.setItem("refreshBlogListOnReturn", "1");
+
+    const storageKey = "pendingBlogViewIncrements";
+    let pendingIncrements = {};
+
+    try {
+        pendingIncrements = JSON.parse(sessionStorage.getItem(storageKey) || "{}");
+    } catch (error) {
+        pendingIncrements = {};
+    }
+
+    pendingIncrements[blogId] = (Number(pendingIncrements[blogId]) || 0) + 1;
+    sessionStorage.setItem(storageKey, JSON.stringify(pendingIncrements));
+});
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,648 @@
+{% extends "base_admin.html" %}
+{% load static %}
+{% block content %}
+<h3 class="mb-4">Edit Blog</h3>
+
+<form method="post" enctype="multipart/form-data" class="card p-4">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label for="title" class="form-label">Title</label>
+        <input type="text" id="title" name="title" class="form-control" value="{% if form_has_post %}{{ form_data.title }}{% else %}{{ blog.title }}{% endif %}">
+        <div id="title_error" class="text-danger small mt-1" role="alert">{{ form_errors.title|default:'' }}</div>
+    </div>
+
+    <div class="mb-3">
+        <label for="author_name" class="form-label">Author Name</label>
+        <input type="text" id="author_name" name="author_name" class="form-control" value="{% if form_has_post %}{{ form_data.author_name }}{% else %}{{ blog.author_name }}{% endif %}">
+        <div class="form-text">Letters only, single spaces between words.</div>
+        <div id="author_name_error" class="text-danger small mt-1" role="alert"></div>
+        {% if form_errors.author_name %}
+            <div class="text-danger small mt-1" role="alert">{{ form_errors.author_name }}</div>
+        {% endif %}
+    </div>
+
+    <div class="mb-3">
+        <label for="short_description" class="form-label">Short Description</label>
+        <textarea id="short_description" name="short_description" class="form-control" rows="3">{% if form_has_post %}{{ form_data.short_description }}{% else %}{{ blog.short_description }}{% endif %}</textarea>
+        <div id="short_description_error" class="text-danger small mt-1" role="alert">{{ form_errors.short_description|default:'' }}</div>
+    </div>
+
+    <div class="mb-3">
+        <label for="description" class="form-label">Full Description</label>
+        <textarea id="description" name="description" class="form-control django-ckeditor-widget" data-type="ckeditortype">{% if form_has_post %}{{ form_data.description }}{% else %}{{ blog.description }}{% endif %}</textarea>
+        <div id="description_error" class="text-danger small mt-1" role="alert">{{ form_errors.description|default:'' }}</div>
+        <div id="ckeditor_images_container" style="display: none; margin-top: 15px;">
+            <label class="form-label">Uploaded Images in Description</label>
+            <div id="ckeditor_images_preview" class="d-flex flex-wrap gap-2"></div>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label for="categories" class="form-label">Categories</label>
+        <select id="categories" name="categories" class="form-select" multiple size="5">
+            {% for category in categories %}
+            <option value="{{ category.id }}" {% if form_has_post %}{% if category.id|stringformat:"s" in selected_category_ids %}selected{% endif %}{% else %}{% if category in blog.categories.all %}selected{% endif %}{% endif %}>{{ category.name }}</option>
+            {% endfor %}
+        </select>
+        <div class="form-text">Click to select/deselect multiple categories.</div>
+        <div id="categories_error" class="text-danger small mt-1" role="alert"></div>
+        {% if form_errors.categories %}
+            <div class="text-danger small mt-1" role="alert">{{ form_errors.categories }}</div>
+        {% endif %}
+    </div>
+
+    <div class="mb-3">
+        <label for="tags" class="form-label">Tags</label>
+        <select id="tags" name="tags" class="form-select" multiple size="5">
+            {% for tag in tags %}
+            <option value="{{ tag.id }}" {% if form_has_post %}{% if tag.id|stringformat:"s" in selected_tag_ids %}selected{% endif %}{% else %}{% if tag in blog.tags.all %}selected{% endif %}{% endif %}>{{ tag.name }}</option>
+            {% endfor %}
+        </select>
+        <div class="form-text">Click to select/deselect multiple tags.</div>
+        <div id="tags_error" class="text-danger small mt-1" role="alert"></div>
+        {% if form_errors.tags %}
+            <div class="text-danger small mt-1" role="alert">{{ form_errors.tags }}</div>
+        {% endif %}
+    </div>
+
+    <div class="mb-3">
+        <label for="featured_image" class="form-label">Featured Image </label>
+        <input type="file" id="featured_image" name="featured_image" class="form-control">
+        {% if blog.featured_image %}
+            <div class="mt-2">
+                <img id="featured_preview" src="{{ blog.featured_image.url }}" alt="Featured" class="img-fluid rounded" style="max-height: 220px; cursor: pointer;">
+                <div class="form-text">Click the image to choose a new file.</div>
+            </div>
+        {% else %}
+            <div class="form-text">No featured image uploaded yet.</div>
+        {% endif %}
+        <div id="featured_image_error" class="text-danger small mt-1" role="alert"></div>
+    </div>
+
+    <div class="mb-3">
+        <label for="gallery" class="form-label">Gallery Images (Optional)</label>
+        <input type="file" id="gallery" name="gallery" class="form-control" multiple>
+        <div class="form-text">You can select multiple files, or add more later.</div>
+        <button type="button" id="add_gallery_btn" class="btn btn-outline-primary btn-sm mt-2">Add More Images</button>
+        <div id="gallery_preview" class="d-flex flex-wrap gap-2 mt-2"></div>
+        <div id="gallery_error" class="text-danger small mt-1" role="alert"></div>
+        
+        {% if blog.gallery.all %}
+        <div class="mt-3">
+            <div class="row g-2">
+                {% for image in blog.gallery.all %}
+                <div class="col-6 col-md-3">
+                    <div class="position-relative">
+                        <img src="{{ image.image.url }}" alt="Gallery" class="img-fluid rounded">
+                        <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1" title="Delete" aria-label="Delete" style="z-index: 10;" onclick="deleteGalleryImage({{ blog.id }}, {{ image.id }})">
+                            &times;
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="form-text mt-2">Click the × icon to delete an image.</div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="form-check mb-3">
+        <input class="form-check-input" type="checkbox" id="is_active" name="is_active" {% if form_has_post %}{% if form_data.is_active %}checked{% endif %}{% else %}{% if blog.is_active %}checked{% endif %}{% endif %}>
+        <label class="form-check-label" for="is_active">Active</label>
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-success">Save</button>
+        <a href="/dashboard/" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+
+<div id="delete-forms-container" style="display: none;"></div>
+
+<script>
+    (function () {
+        var maxSizeBytes = 5 * 1024 * 1024;
+        var allowedExtensions = [".jpg", ".jpeg", ".png"];
+
+        function isAllowedImage(file) {
+            if (!file) {
+                return false;
+            }
+            var typeOk = file.type === "image/jpeg" || file.type === "image/png";
+            var name = (file.name || "").toLowerCase();
+            var extOk = allowedExtensions.some(function (ext) {
+                return name.endsWith(ext);
+            });
+            return typeOk || extOk;
+        }
+
+        function validateFile(file) {
+            if (!isAllowedImage(file)) {
+                return "Only JPG and PNG images are allowed.";
+            }
+            if (file.size > maxSizeBytes) {
+                return "Image size must not exceed 5 MB.";
+            }
+            return "";
+        }
+
+        function setError(el, message) {
+            if (el) {
+                el.textContent = message || "";
+            }
+        }
+
+        function hasLeadingOrTrailingSpace(value) {
+            return /^ | $/.test(value);
+        }
+
+        function hasMultipleSpaces(value) {
+            return / {2,}/.test(value);
+        }
+
+        function isLettersAndSpacesOnly(value) {
+            return /^[A-Za-z ]+$/.test(value);
+        }
+
+        function isTitleCase(value) {
+            return value && value === value.replace(/\w\S*/g, function (word) {
+                return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+            });
+        }
+
+        function toTitleCase(value) {
+            return value
+                .trim()
+                .replace(/\s+/g, " ")
+                .replace(/\w\S*/g, function (word) {
+                    return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+                });
+        }
+
+        function getTextValue(id) {
+            var el = document.getElementById(id);
+            return el ? el.value.trim() : "";
+        }
+
+        function countSelected(id) {
+            var el = document.getElementById(id);
+            if (!el) return 0;
+            var selected = Array.prototype.filter.call(el.options, function(option) {
+                return option.selected;
+            });
+            return selected.length;
+        }
+
+        var featuredInput = document.getElementById("featured_image");
+        var galleryInput = document.getElementById("gallery");
+        var featuredError = document.getElementById("featured_image_error");
+        var galleryError = document.getElementById("gallery_error");
+        var galleryPreview = document.getElementById("gallery_preview");
+        var titleError = document.getElementById("title_error");
+        var titleInput = document.getElementById("title");
+        var authorNameError = document.getElementById("author_name_error");
+        var shortDescriptionError = document.getElementById("short_description_error");
+        var shortDescriptionInput = document.getElementById("short_description");
+        var descriptionError = document.getElementById("description_error");
+        var descriptionInput = document.getElementById("description");
+        var categoriesError = document.getElementById("categories_error");
+        var tagsError = document.getElementById("tags_error");
+        var addGalleryBtn = document.getElementById("add_gallery_btn");
+        var form = document.querySelector("form");
+        var categoriesSelect = document.getElementById("categories");
+        var tagsSelect = document.getElementById("tags");
+
+        function enableClickToggle(selectElement) {
+            if (!selectElement) return;
+            
+            selectElement.addEventListener("mousedown", function(e) {
+                e.preventDefault();
+                var option = e.target;
+                if (option.tagName === "OPTION") {
+                    option.selected = !option.selected;
+                    selectElement.focus();
+                }
+            });
+        }
+
+        enableClickToggle(categoriesSelect);
+        enableClickToggle(tagsSelect);
+        if (titleInput) {
+            titleInput.addEventListener("input", function() {
+                setError(titleError, "");
+            });
+        }
+        
+        var authorNameInput = document.getElementById("author_name");
+        if (authorNameInput) {
+            authorNameInput.addEventListener("input", function() {
+                setError(authorNameError, "");
+            });
+        }
+        
+        if (shortDescriptionInput) {
+            shortDescriptionInput.addEventListener("input", function() {
+                setError(shortDescriptionError, "");
+            });
+        }
+        
+        if (descriptionInput) {
+            descriptionInput.addEventListener("input", function() {
+                setError(descriptionError, "");
+            });
+        }
+
+        if (categoriesSelect) {
+            categoriesSelect.addEventListener("change", function() {
+                setError(categoriesError, "");
+            });
+        }
+        
+        if (tagsSelect) {
+            tagsSelect.addEventListener("change", function() {
+                setError(tagsError, "");
+            });
+        }
+
+        if (featuredInput) {
+            featuredInput.addEventListener("change", function () {
+                var file = featuredInput.files && featuredInput.files[0];
+                var error = file ? validateFile(file) : "";
+                if (error) {
+                    featuredInput.value = "";
+                }
+                setError(featuredError, error);
+                if (!error && file) {
+                    var preview = document.getElementById("featured_preview");
+                    if (preview) {
+                        preview.src = URL.createObjectURL(file);
+                    }
+                }
+            });
+        }
+
+        var featuredPreview = document.getElementById("featured_preview");
+        if (featuredPreview && featuredInput) {
+            featuredPreview.addEventListener("click", function () {
+                featuredInput.click();
+            });
+        }
+
+        function renderGalleryPreview(files) {
+            if (!galleryPreview) {
+                return;
+            }
+            galleryPreview.innerHTML = "";
+            Array.prototype.slice.call(files || []).forEach(function (file) {
+                var imageUrl = URL.createObjectURL(file);
+                var image = document.createElement("img");
+                image.src = imageUrl;
+                image.alt = file.name || "Gallery Preview";
+                image.className = "rounded border";
+                image.style.width = "100px";
+                image.style.height = "100px";
+                image.style.objectFit = "cover";
+                image.onload = function () {
+                    URL.revokeObjectURL(imageUrl);
+                };
+                galleryPreview.appendChild(image);
+            });
+        }
+
+        if (galleryInput) {
+            galleryInput.addEventListener("change", function () {
+                if (!galleryInput._selectedFiles) {
+                    galleryInput._selectedFiles = [];
+                }
+                var incoming = Array.prototype.slice.call(galleryInput.files || []);
+                if (incoming.length === 0) {
+                    return;
+                }
+
+                var errors = [];
+                var validIncoming = [];
+                incoming.forEach(function (file) {
+                    var error = validateFile(file);
+                    if (error) {
+                        errors.push(file.name + ": " + error);
+                    } else {
+                        validIncoming.push(file);
+                    }
+                });
+
+                if (validIncoming.length > 0) {
+                    galleryInput._selectedFiles = galleryInput._selectedFiles.concat(validIncoming);
+                }
+
+                var dataTransfer = new DataTransfer();
+                galleryInput._selectedFiles.forEach(function (file) {
+                    dataTransfer.items.add(file);
+                });
+                galleryInput.files = dataTransfer.files;
+                renderGalleryPreview(galleryInput.files);
+
+                setError(galleryError, errors.join(" "));
+            });
+        }
+
+        if (addGalleryBtn && galleryInput) {
+            addGalleryBtn.addEventListener("click", function () {
+                galleryInput.click();
+            });
+        }
+
+        if (form) {
+            form.addEventListener("submit", function (event) {
+                var hasError = false;
+                var title = getTextValue("title");
+                var rawTitle = titleInput ? titleInput.value : "";
+                var authorName = getTextValue("author_name");
+                var rawAuthorName = document.getElementById("author_name") ? document.getElementById("author_name").value : "";
+                var shortDescription = getTextValue("short_description");
+                var rawShortDescription = shortDescriptionInput ? shortDescriptionInput.value : "";
+                var description = getTextValue("description");
+                var rawDescription = descriptionInput ? descriptionInput.value : "";
+
+                if (!title) {
+                    setError(titleError, "Title is required.");
+                    hasError = true;
+                } else if (hasLeadingOrTrailingSpace(rawTitle)) {
+                    setError(titleError, "Title must not have leading or trailing spaces.");
+                    hasError = true;
+                } else if (hasMultipleSpaces(rawTitle)) {
+                    setError(titleError, "Title must not contain multiple spaces between words.");
+                    hasError = true;
+                } else if (!isLettersAndSpacesOnly(title)) {
+                    setError(titleError, "Title must contain letters only.");
+                    hasError = true;
+                } else if (!isTitleCase(title)) {
+                    setError(titleError, "Title must be in title case.");
+                    hasError = true;
+                } else {
+                    setError(titleError, "");
+                }
+
+                if (!authorName) {
+                    setError(authorNameError, "Author name is required.");
+                    hasError = true;
+                } else if (hasLeadingOrTrailingSpace(rawAuthorName)) {
+                    setError(authorNameError, "Author name must not have leading or trailing spaces.");
+                    hasError = true;
+                } else if (hasMultipleSpaces(rawAuthorName)) {
+                    setError(authorNameError, "Author name must not contain multiple spaces between words.");
+                    hasError = true;
+                } else {
+                    setError(authorNameError, "");
+                }
+
+                if (!shortDescription) {
+                    setError(shortDescriptionError, "Short description is required.");
+                    hasError = true;
+                } else if (hasLeadingOrTrailingSpace(rawShortDescription)) {
+                    setError(shortDescriptionError, "Short description must not have leading or trailing spaces.");
+                    hasError = true;
+                } else if (hasMultipleSpaces(rawShortDescription)) {
+                    setError(shortDescriptionError, "Short description must not contain multiple spaces between words.");
+                    hasError = true;
+                } else {
+                    setError(shortDescriptionError, "");
+                }
+
+                if (shortDescriptionInput && shortDescription && !hasLeadingOrTrailingSpace(rawShortDescription) && !hasMultipleSpaces(rawShortDescription)) {
+                    shortDescriptionInput.value = toTitleCase(shortDescriptionInput.value || shortDescription);
+                }
+
+                if (!description) {
+                    setError(descriptionError, "Full description is required.");
+                    hasError = true;
+                } else if (hasLeadingOrTrailingSpace(rawDescription)) {
+                    setError(descriptionError, "Full description must not have leading or trailing spaces.");
+                    hasError = true;
+                } else if (hasMultipleSpaces(rawDescription)) {
+                    setError(descriptionError, "Full description must not contain multiple spaces between words.");
+                    hasError = true;
+                } else {
+                    setError(descriptionError, "");
+                }
+
+                if (countSelected("categories") === 0) {
+                    setError(categoriesError, "Please select at least one category.");
+                    hasError = true;
+                } else {
+                    setError(categoriesError, "");
+                }
+
+                if (countSelected("tags") === 0) {
+                    setError(tagsError, "Please select at least one tag.");
+                    hasError = true;
+                } else {
+                    setError(tagsError, "");
+                }
+
+                if (featuredInput) {
+                    var featuredFile = featuredInput.files && featuredInput.files[0];
+                    var featuredMsg = featuredFile ? validateFile(featuredFile) : "";
+                    if (featuredMsg) {
+                        setError(featuredError, featuredMsg);
+                        hasError = true;
+                    } else {
+                        setError(featuredError, "");
+                    }
+                }
+
+                if (galleryInput) {
+                    var galleryErrors = [];
+                    Array.prototype.slice.call(galleryInput.files || []).forEach(function (file) {
+                        var error = validateFile(file);
+                        if (error) {
+                            galleryErrors.push(file.name + ": " + error);
+                        }
+                    });
+                    if (galleryErrors.length > 0) {
+                        setError(galleryError, galleryErrors.join(" "));
+                        hasError = true;
+                    } else {
+                        setError(galleryError, "");
+                    }
+                }
+
+                if (hasError) {
+                    event.preventDefault();
+                }
+            });
+        }
+    })();
+
+    function deleteGalleryImage(blogId, imageId) {
+        if (!confirm('Delete this image?')) {
+            return;
+        }
+        
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/dashboard/blogs/' + blogId + '/gallery/' + imageId + '/delete/';
+        
+        var csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        form.appendChild(csrfInput);
+        
+        document.getElementById('delete-forms-container').appendChild(form);
+        form.submit();
+    }
+</script>
+<script src="https://cdn.ckeditor.com/ckeditor5/40.0.0/classic/ckeditor.js"></script>
+<script>
+    function renderCKEditorImages(editor) {
+        var container = document.getElementById("ckeditor_images_container");
+        var preview = document.getElementById("ckeditor_images_preview");
+        if (!container || !preview) return;
+
+        var html = editor.getData();
+        var parser = new DOMParser();
+        var doc = parser.parseFromString(html, "text/html");
+        var images = doc.querySelectorAll("img");
+        
+        preview.innerHTML = "";
+        if (images.length === 0) {
+            container.style.display = "none";
+            return;
+        }
+        
+        container.style.display = "block";
+        
+        images.forEach(function (img, index) {
+            var item = document.createElement("div");
+            item.className = "position-relative";
+            
+            var imgClone = document.createElement("img");
+            imgClone.src = img.src || "";
+            imgClone.alt = img.alt || "Editor Image";
+            imgClone.className = "rounded border";
+            imgClone.style.width = "100px";
+            imgClone.style.height = "100px";
+            imgClone.style.objectFit = "cover";
+            
+            var removeBtn = document.createElement("button");
+            removeBtn.type = "button";
+            removeBtn.className = "btn btn-sm btn-danger position-absolute top-0 end-0";
+            removeBtn.style.lineHeight = "1";
+            removeBtn.style.padding = "0.05rem 0.3rem";
+            removeBtn.textContent = "×";
+            removeBtn.addEventListener("click", function (e) {
+                e.preventDefault();
+                var currentHtml = editor.getData();
+                var currentDoc = parser.parseFromString(currentHtml, "text/html");
+                var currentImages = currentDoc.querySelectorAll("img");
+                if (index < currentImages.length) {
+                    var imgToRemove = currentImages[index];
+                    var parent = imgToRemove.parentNode;
+                    if (parent && parent.tagName === "FIGURE") {
+                        parent.remove();
+                    } else {
+                        imgToRemove.remove();
+                    }
+                    var updatedHtml = new XMLSerializer().serializeToString(currentDoc.body).replace(/<body[^>]*>/, "").replace(/<\/body>/, "");
+                    editor.setData(updatedHtml);
+                    renderCKEditorImages(editor);
+                }
+            });
+            
+            item.appendChild(imgClone);
+            item.appendChild(removeBtn);
+            preview.appendChild(item);
+        });
+    }
+    class MyUploadAdapter {
+        constructor(loader) {
+            this.loader = loader;
+        }
+
+        upload() {
+            return this.loader.file.then(file => {
+                return new Promise((resolve, reject) => {
+                    const formData = new FormData();
+                    formData.append('upload', file);
+                    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+                    if (csrfToken) {
+                        formData.append('csrfmiddlewaretoken', csrfToken);
+                    }
+
+                    console.log('Uploading file:', file.name, 'Size:', file.size, 'Type:', file.type);
+                    console.log('CSRF Token:', csrfToken ? 'Present' : 'Missing');
+
+                    fetch('/ckeditor/upload/', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRFToken': csrfToken
+                        }
+                    })
+                    .then(response => {
+                        console.log('Upload response status:', response.status, response.statusText);
+                        
+                        if (!response.ok) {
+                            return response.text().then(text => {
+                                console.log('Error response:', text);
+                                try {
+                                    const data = JSON.parse(text);
+                                    throw new Error(data.error || 'Upload failed with status ' + response.status);
+                                } catch (e) {
+                                    throw new Error('Upload failed with status ' + response.status + ': ' + text);
+                                }
+                            });
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Upload response data:', data);
+                        if (data.url) {
+                            console.log('Upload successful:', data.url);
+                            resolve({
+                                default: data.url
+                            });
+                        } else if (data.error) {
+                            throw new Error(data.error);
+                        } else {
+                            throw new Error('No URL in response');
+                        }
+                    })
+                    .catch(error => {
+                        const errorMsg = error instanceof Error ? error.message : String(error);
+                        console.error('Upload error:', errorMsg);
+                        reject(errorMsg);
+                    });
+                });
+            });
+        }
+
+        abort() {
+            
+        }
+    }
+
+    function MyCustomUploadAdapterPlugin(editor) {
+        editor.plugins.get('FileRepository').createUploadAdapter = (loader) => {
+            return new MyUploadAdapter(loader);
+        };
+    }
+
+    ClassicEditor
+        .create(document.querySelector('#description'), {
+            extraPlugins: [MyCustomUploadAdapterPlugin],
+            toolbar: ['heading', '|', 'bold', 'italic', 'link', 'blockQuote', 'numberedList', 'bulletedList', 'imageUpload', 'undo', 'redo']
+        })
+        .then(editor => {
+            document.querySelector('#description')._ckeditorInstance = editor;
+            editor.model.document.on('change:data', function () {
+                renderCKEditorImages(editor);
+            });
+            
+            renderCKEditorImages(editor);
+        })
+        .catch(error => {
+            console.error('CKEditor initialization error:', error);
+        });
+</script>
+{% endblock %}
