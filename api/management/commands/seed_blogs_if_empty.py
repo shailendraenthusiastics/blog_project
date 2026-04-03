@@ -67,56 +67,74 @@ class Command(BaseCommand):
         admin_username = os.environ.get("ADMIN_USERNAME", "admin")
         admin_password = os.environ.get("ADMIN_PASSWORD", "admin123")
 
-        for user_data in SEED_DATA["users"]:
-            user, created = User.objects.get_or_create(
-                id=user_data["id"],
-                defaults={"username": admin_username},
-            )
-            if created or user.username != admin_username:
-                user.username = admin_username
-            user.is_staff = True
-            user.is_superuser = True
-            user.is_active = True
-            user.set_password(admin_password)
-            user.save()
+        admin_user = User.objects.get(username=admin_username)
+
+        admin_user.username = admin_username
+        admin_user.is_staff = True
+        admin_user.is_superuser = True
+        admin_user.is_active = True
+        admin_user.set_password(admin_password)
+        admin_user.save()
 
         for category in SEED_DATA["categories"]:
             BlogCategory.objects.update_or_create(
-                id=category["id"],
+                slug=category["slug"],
                 defaults={
                     "name": category["name"],
-                    "slug": category["slug"],
                     "is_active": True,
                 },
             )
 
         for tag in SEED_DATA["tags"]:
             BlogTag.objects.update_or_create(
-                id=tag["id"],
+                slug=tag["slug"],
                 defaults={
                     "name": tag["name"],
-                    "slug": tag["slug"],
                     "is_active": True,
                 },
             )
 
         for blog_data in SEED_DATA["blogs"]:
             blog, _ = Blog.objects.update_or_create(
-                id=blog_data["id"],
+                slug=blog_data["slug"],
                 defaults={
                     "title": blog_data["title"],
-                    "slug": blog_data["slug"],
                     "short_description": blog_data["short_description"],
                     "description": blog_data["description"],
                     "view_count": blog_data["view_count"],
                     "author_name": blog_data["author_name"],
-                    "author_id": blog_data["author_id"],
+                    "author": admin_user,
                     "featured_image": blog_data["featured_image"],
                     "is_active": True,
                 },
             )
-            blog.categories.set(blog_data["categories"])
-            blog.tags.set(blog_data["tags"])
+            blog.categories.set(
+                BlogCategory.objects.filter(
+                    slug__in=[
+                        "nature",
+                        "travel",
+                        "adventure",
+                    ]
+                )
+            )
+            if blog_data["slug"] == "the-magic-of-mountains-a-journey-above-the-clouds":
+                blog.categories.set(
+                    BlogCategory.objects.filter(slug__in=["nature", "travel"])
+                )
+                blog.tags.set(
+                    BlogTag.objects.filter(
+                        slug__in=["mountains", "trekking", "adventure"]
+                    )
+                )
+            else:
+                blog.categories.set(
+                    BlogCategory.objects.filter(slug__in=["nature", "adventure"])
+                )
+                blog.tags.set(
+                    BlogTag.objects.filter(
+                        slug__in=["mountains", "beach", "sea", "travel"]
+                    )
+                )
 
     def _ensure_admin_superuser(self):
         admin_username = os.environ.get("ADMIN_USERNAME", "admin")
@@ -148,10 +166,9 @@ class Command(BaseCommand):
         if existing_count > 0:
             self.stdout.write(
                 self.style.NOTICE(
-                    f"Skipping seed: {existing_count} blogs already exist."
+                    f"Reconciling seed data: {existing_count} blogs already exist."
                 )
             )
-            return
 
         fixture_path = (
             Path(settings.BASE_DIR) / "api" / "fixtures" / "initial_data.json"
@@ -166,6 +183,7 @@ class Command(BaseCommand):
             self.stdout.write(
                 self.style.SUCCESS("Seeded initial blog data successfully.")
             )
+            self._reset_sequences()
             return
 
         try:
@@ -184,6 +202,9 @@ class Command(BaseCommand):
                     "Fixture load completed but blog table is still empty. Using embedded seed data."
                 )
             )
+            self._seed_from_embedded_data()
+
+        if Blog.objects.count() > 0:
             self._seed_from_embedded_data()
 
         self._reset_sequences()
