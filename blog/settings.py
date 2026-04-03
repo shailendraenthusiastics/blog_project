@@ -111,6 +111,7 @@ STATICFILES_DIRS = [
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
+
 def _database_from_env():
     database_url = os.environ.get("DATABASE_URL", "").strip()
     if not database_url:
