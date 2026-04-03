@@ -16,7 +16,7 @@ import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-y-k9stp(1afj+nup%0-us9&ng(g&#(ky_*2)wvdg+syul07fcz"
-DEBUG = False
+DEBUG = True
 ALLOWED_HOSTS = ["*"]
 print("ALLOWED HOSTS LOADED:", ALLOWED_HOSTS)
 INSTALLED_APPS = [
@@ -84,7 +84,7 @@ DATABASES = {
         "NAME": "blog",
         "USER": "postgres",
         "PASSWORD": "Sky1234@",
-        "HOST": "localhost",
+        # "HOST": "localhost",
         "PORT": "5432",
     }
 }
