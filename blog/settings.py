@@ -16,7 +16,7 @@ import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-y-k9stp(1afj+nup%0-us9&ng(g&#(ky_*2)wvdg+syul07fcz"
-DEBUG = True
+DEBUG = False
 ALLOWED_HOSTS = ["*"]
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -79,12 +79,12 @@ WSGI_APPLICATION = "blog.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.mysql",
+        "ENGINE": "django.db.backends.postgresql",
         "NAME": "blog",
-        "USER": "root",
-        "PASSWORD": "sky1234@#$",
+        "USER": "postgres",
+        "PASSWORD": "Sky1234@",
         "HOST": "localhost",
-        "PORT": "3306",
+        "PORT": "5432",
     }
 }
 
