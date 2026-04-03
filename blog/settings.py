@@ -119,3 +119,13 @@ STATICFILES_DIRS = [
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+import dj_database_url
+import os
+
+DATABASES = {
+    "default": dj_database_url.config(
+        default=os.environ.get(
+            "postgresql://blog_5qph_user:RGBopdODA1qdEhFJICOkp5eNr6y7y0Xj@dpg-d77qm9edqaus73algg3g-a/blog_5qph"
+        )
+    )
+}
