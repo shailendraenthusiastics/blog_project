@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 from pathlib import Path
 from datetime import timedelta
 import os
+from urllib.parse import urlparse, unquote
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-y-k9stp(1afj+nup%0-us9&ng(g&#(ky_*2)wvdg+syul07fcz"
@@ -110,22 +111,39 @@ STATICFILES_DIRS = [
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
-try:
-    import dj_database_url
-except ImportError:
-    dj_database_url = None
-
-if dj_database_url:
-    DATABASES = {
-        "default": dj_database_url.config(
-            default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}"
-        )
-    }
-else:
-    # Fallback so the app can still start if dj-database-url is not installed.
-    DATABASES = {
-        "default": {
+def _database_from_env():
+    database_url = os.environ.get("DATABASE_URL", "").strip()
+    if not database_url:
+        return {
             "ENGINE": "django.db.backends.sqlite3",
             "NAME": BASE_DIR / "db.sqlite3",
         }
+
+    parsed = urlparse(database_url)
+
+    if parsed.scheme in ("postgres", "postgresql"):
+        return {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": parsed.path.lstrip("/"),
+            "USER": unquote(parsed.username or ""),
+            "PASSWORD": unquote(parsed.password or ""),
+            "HOST": parsed.hostname or "localhost",
+            "PORT": str(parsed.port or "5432"),
+            "CONN_MAX_AGE": 600,
+            "OPTIONS": {"sslmode": "require"},
+        }
+
+    if parsed.scheme == "sqlite":
+        db_path = parsed.path.lstrip("/")
+        return {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / db_path if db_path else BASE_DIR / "db.sqlite3",
+        }
+
+    return {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
+
+
+DATABASES = {"default": _database_from_env()}
