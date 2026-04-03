@@ -17,7 +17,11 @@ import os
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-y-k9stp(1afj+nup%0-us9&ng(g&#(ky_*2)wvdg+syul07fcz"
 DEBUG = False
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = [
+    "blog-project-1-9fz2.onrender.com",
+    "localhost",
+    "127.0.0.1",
+]
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
