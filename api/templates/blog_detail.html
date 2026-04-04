@@ -77,6 +77,15 @@
     <div class="alert alert-danger">Blog not found</div>
 </div>
 {% endif %}
+{% if not blog_data %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    if (typeof loadBlogDetail === "function") {
+        loadBlogDetail();
+    }
+});
+</script>
+{% endif %}
 {% if blog_data %}
 <script>
 document.addEventListener("DOMContentLoaded", function () {
