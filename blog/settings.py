@@ -36,6 +36,7 @@ default_media_root = os.path.join(BASE_DIR, "media")
 if os.path.isdir("/var/data"):
     default_media_root = "/var/data/media"
 MEDIA_ROOT = os.environ.get("MEDIA_ROOT", default_media_root)
+print("EFFECTIVE MEDIA_ROOT:", MEDIA_ROOT)
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",

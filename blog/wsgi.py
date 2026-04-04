@@ -8,6 +8,7 @@ https://docs.djangoproject.com/en/6.0/howto/deployment/wsgi/
 """
 
 import os
+from django.conf import settings
 
 from django.core.wsgi import get_wsgi_application
 
@@ -18,6 +19,7 @@ if os.environ.get("RENDER", "").lower() == "true":
     from django.core.management import call_command
 
     django.setup()
+    print(f"WSGI active MEDIA_ROOT: {settings.MEDIA_ROOT}")
     # Defensive migration hook for platforms where start command may skip migrate.
     call_command("migrate", interactive=False, verbosity=0)
     # Defensive seed hook for platforms where start command may skip seed.
