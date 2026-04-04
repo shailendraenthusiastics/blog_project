@@ -271,7 +271,15 @@ function applyFilters(){
     loadBlogs(query);
 }
 
-document.addEventListener("DOMContentLoaded", applyPendingViewCountSync);
+document.addEventListener("DOMContentLoaded", () => {
+    applyPendingViewCountSync();
+
+    // Auto-load blogs on list pages so API fetch is always triggered.
+    const blogContainer = document.getElementById("blogContainer");
+    if (blogContainer) {
+        loadBlogs(window.location.search || "");
+    }
+});
 window.addEventListener("pageshow", function () {
     refreshListOnBackNavigation();
     applyPendingViewCountSync();
