@@ -1,9 +1,25 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
+from django.core.files.storage import default_storage
 from .models import Blog, BlogCategory, BlogTag, BlogImage
 import os
 import re
 from django.utils.text import slugify
+
+
+def _gallery_urls(instance, request=None):
+    urls = []
+    for img in instance.gallery.all():
+        if not img.image:
+            continue
+        image_name = img.image.name
+        if not image_name or not default_storage.exists(image_name):
+            continue
+        url = img.image.url
+        if request:
+            url = request.build_absolute_uri(url)
+        urls.append(url)
+    return urls
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
 
@@ -75,14 +91,7 @@ class BlogSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         request = self.context.get('request')
-        gallery_images = instance.gallery.all()
-        if gallery_images:
-            if request:
-                representation['gallery'] = [request.build_absolute_uri(img.image.url) for img in gallery_images]
-            else:
-                representation['gallery'] = [img.image.url for img in gallery_images]
-        else:
-            representation['gallery'] = []
+        representation['gallery'] = _gallery_urls(instance, request)
         
         return representation
     def create(self, validated_data):
@@ -202,16 +211,7 @@ class BlogListSerializer(serializers.ModelSerializer):
             if request:
                 url = request.build_absolute_uri(url)
             representation['featured_image'] = url
-        gallery_images = instance.gallery.all()
-        if gallery_images:
-            representation['gallery'] = []
-            for img in gallery_images:
-                url = img.image.url
-                if request:
-                    url = request.build_absolute_uri(url)
-                representation['gallery'].append(url)
-        else:
-            representation['gallery'] = []
+        representation['gallery'] = _gallery_urls(instance, request)
         
         return representation
 
@@ -244,16 +244,7 @@ class BlogDetailSerializer(serializers.ModelSerializer):
             if request:
                 url = request.build_absolute_uri(url)
             representation['featured_image'] = url
-        gallery_images = instance.gallery.all()
-        if gallery_images:
-            representation['gallery'] = []
-            for img in gallery_images:
-                url = img.image.url
-                if request:
-                    url = request.build_absolute_uri(url)
-                representation['gallery'].append(url)
-        else:
-            representation['gallery'] = []
+        representation['gallery'] = _gallery_urls(instance, request)
         
         return representation
 
@@ -309,11 +300,7 @@ class BlogAdminDetailSerializer(serializers.ModelSerializer):
             if request:
                 url = request.build_absolute_uri(url)
             representation['featured_image'] = url
-        gallery_images = instance.gallery.all()
-        if gallery_images:
-            representation['gallery'] = [img.image.url for img in gallery_images]
-        else:
-            representation['gallery'] = []
+        representation['gallery'] = _gallery_urls(instance, request)
         
         return representation
 
