@@ -38,7 +38,7 @@
                 </td>
                 <td>
                     {% if blog.featured_image %}
-                    <img src="{{ blog.featured_image }}" alt="{{ blog.title }}" style="width: 60px; height: 50px; object-fit: cover; border-radius: 4px;">
+                    <img src="{{ blog.featured_image.url }}" alt="{{ blog.title }}" style="width: 60px; height: 50px; object-fit: cover; border-radius: 4px;">
                     {% else %}
                     <span class="text-muted" style="font-size: 12px;">No Image</span>
                     {% endif %}

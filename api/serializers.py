@@ -196,9 +196,14 @@ class BlogListSerializer(serializers.ModelSerializer):
     
     def to_representation(self, instance):
         representation = super().to_representation(instance)
+        request = self.context.get('request')
+        if representation.get('featured_image'):
+            url = instance.featured_image.url
+            if request:
+                url = request.build_absolute_uri(url)
+            representation['featured_image'] = url
         gallery_images = instance.gallery.all()
         if gallery_images:
-            request = self.context.get('request')
             representation['gallery'] = []
             for img in gallery_images:
                 url = img.image.url
@@ -233,9 +238,14 @@ class BlogDetailSerializer(serializers.ModelSerializer):
     
     def to_representation(self, instance):
         representation = super().to_representation(instance)
+        request = self.context.get('request')
+        if representation.get('featured_image'):
+            url = instance.featured_image.url
+            if request:
+                url = request.build_absolute_uri(url)
+            representation['featured_image'] = url
         gallery_images = instance.gallery.all()
         if gallery_images:
-            request = self.context.get('request')
             representation['gallery'] = []
             for img in gallery_images:
                 url = img.image.url
@@ -262,7 +272,11 @@ class BlogAdminListSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         if representation.get('featured_image'):
-            representation['featured_image'] = instance.featured_image.url
+            request = self.context.get('request')
+            url = instance.featured_image.url
+            if request:
+                url = request.build_absolute_uri(url)
+            representation['featured_image'] = url
         return representation
 
 
@@ -289,6 +303,12 @@ class BlogAdminDetailSerializer(serializers.ModelSerializer):
     
     def to_representation(self, instance):
         representation = super().to_representation(instance)
+        request = self.context.get('request')
+        if representation.get('featured_image'):
+            url = instance.featured_image.url
+            if request:
+                url = request.build_absolute_uri(url)
+            representation['featured_image'] = url
         gallery_images = instance.gallery.all()
         if gallery_images:
             representation['gallery'] = [img.image.url for img in gallery_images]
