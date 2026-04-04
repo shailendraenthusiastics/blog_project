@@ -5,12 +5,10 @@ services:
     plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: bash start.sh
-
-disks:
-  - name: blog-media
-    mountPath: /var/data
-    sizeGB: 1
-
-envVars:
-  - key: MEDIA_ROOT
-    value: /var/data/media
+    disk:
+      name: blog-media
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: MEDIA_ROOT
+        value: /var/data/media
