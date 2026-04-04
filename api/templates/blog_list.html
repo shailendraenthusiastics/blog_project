@@ -103,6 +103,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         loadCategoriesForFilter(),
         loadTagsForFilter()
     ]);
+
+    if (typeof loadBlogs === "function") {
+        loadBlogs(window.location.search || "");
+    }
 });
 
 window.addEventListener('pageshow', function (event) {
