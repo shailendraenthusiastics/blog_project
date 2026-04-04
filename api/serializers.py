@@ -19,16 +19,6 @@ def _gallery_urls(instance, request=None):
         if request:
             url = request.build_absolute_uri(url)
         urls.append(url)
-
-    # Keep gallery usable when old gallery rows are missing files on disk.
-    if not urls and getattr(instance, "featured_image", None):
-        featured_name = instance.featured_image.name
-        if featured_name and default_storage.exists(featured_name):
-            featured_url = instance.featured_image.url
-            if request:
-                featured_url = request.build_absolute_uri(featured_url)
-            urls.append(featured_url)
-
     return urls
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
