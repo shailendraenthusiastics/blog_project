@@ -20,5 +20,7 @@ if os.environ.get("RENDER", "").lower() == "true":
     django.setup()
     # Defensive migration hook for platforms where start command may skip migrate.
     call_command("migrate", interactive=False, verbosity=0)
+    # Defensive seed hook for platforms where start command may skip seed.
+    call_command("seed_render_content", verbosity=0)
 
 application = get_wsgi_application()
