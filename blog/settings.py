@@ -117,6 +117,18 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 
+def _normalize_render_db_host(host):
+    if not host:
+        return host
+    host = host.strip()
+    # Render sometimes gets configured with short internal DB host IDs (dpg-...-a).
+    # Expanding to a FQDN prevents temporary name-resolution failures.
+    if host.startswith("dpg-") and "." not in host:
+        render_region = os.environ.get("RENDER_REGION", "oregon").strip().lower()
+        return f"{host}.{render_region}-postgres.render.com"
+    return host
+
+
 def _database_from_env():
     database_url = os.environ.get("DATABASE_URL", "").strip()
     if database_url:
@@ -124,12 +136,14 @@ def _database_from_env():
         if parsed.scheme not in ("postgres", "postgresql"):
             raise ValueError("DATABASE_URL must use postgres/postgresql scheme.")
 
+        normalized_host = _normalize_render_db_host(parsed.hostname or "localhost")
+
         return {
             "ENGINE": "django.db.backends.postgresql",
             "NAME": parsed.path.lstrip("/"),
             "USER": unquote(parsed.username or ""),
             "PASSWORD": unquote(parsed.password or ""),
-            "HOST": parsed.hostname or "localhost",
+            "HOST": normalized_host,
             "PORT": str(parsed.port or "5432"),
             "CONN_MAX_AGE": 600,
             "OPTIONS": {"sslmode": "require"},
@@ -140,7 +154,7 @@ def _database_from_env():
         "NAME": os.environ.get("DB_NAME", "blog"),
         "USER": os.environ.get("DB_USER", "postgres"),
         "PASSWORD": os.environ.get("DB_PASSWORD", "Sky1234@"),
-        "HOST": os.environ.get("DB_HOST", "localhost"),
+        "HOST": _normalize_render_db_host(os.environ.get("DB_HOST", "localhost")),
         "PORT": os.environ.get("DB_PORT", "5432"),
     }
 
