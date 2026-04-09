@@ -1,8 +1,18 @@
 from django.contrib import admin
 from django.urls import path, include
+from django.contrib.sitemaps.views import sitemap
 from django.conf import settings
 from django.conf.urls.static import static
-from api.views import BlogFrontendViewSet, BlogDetailPageViewSet, ckeditor_upload_view
+from api.views import (
+    BlogFrontendViewSet,
+    BlogDetailPageViewSet,
+    BlogSitemap,
+    ckeditor_upload_view,
+)
+
+sitemaps = {
+    "blogs": BlogSitemap,
+}
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -13,6 +23,7 @@ urlpatterns = [
         BlogDetailPageViewSet.as_view({"get": "list"}),
         name="blog-detail-query",
     ),
+    path("sitemap.xml", sitemap, {"sitemaps": sitemaps}, name="sitemap"),
     path("ckeditor/upload/", ckeditor_upload_view, name="ckeditor-upload"),
     path("dashboard/", include("Admin.urls")),
     path("api/", include("api.urls")),
