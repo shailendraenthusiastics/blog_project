@@ -19,6 +19,11 @@ urlpatterns = [
     path("", BlogFrontendViewSet.as_view({"get": "list"}), name="home"),
     path("list/", BlogFrontendViewSet.as_view({"get": "list"}), name="blog-frontend"),
     path(
+        "post/<slug:slug>/",
+        BlogDetailPageViewSet.as_view({"get": "retrieve"}),
+        name="blog-detail-page",
+    ),
+    path(
         "blog-detail/",
         BlogDetailPageViewSet.as_view({"get": "list"}),
         name="blog-detail-query",

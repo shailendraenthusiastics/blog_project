@@ -32,23 +32,25 @@
 
 <div class="row" id="blogContainer">
     {% for blog in blogs %}
+    {% if blog.slug %}
+    {% with blog_url='/post/'|add:blog.slug|add:'/' %}
     <div class="col-md-4 mb-3" data-blog-id="{{ blog.id }}">
         <div class="card shadow-sm h-100">
             <div class="card-body pb-0">
                 <h5>
-                    <a href="/blog-detail/?id={{ blog.id }}" style="text-decoration: none; color: inherit; cursor: pointer;">
+                    <a href="{{ blog_url }}" style="text-decoration: none; color: inherit; cursor: pointer;">
                         {{ blog.title }}
                     </a>
                 </h5>
                 {% if blog.featured_image %}
-                <a href="/blog-detail/?id={{ blog.id }}" style="text-decoration: none;">
+                <a href="{{ blog_url }}" style="text-decoration: none;">
                     <img src="{{ blog.featured_image.url }}" class="card-img" style="height: 200px; object-fit: cover; cursor: pointer; width: 100%; margin: 10px -12px 0 -12px; border-radius: 0 0 0.25rem 0.25rem;">
                 </a>
                 {% endif %}
                 {% if blog.gallery %}
                 <div style="margin-top: 8px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;">
                     {% for gallery_img in blog.gallery.all %}
-                    <a href="/blog-detail/?id={{ blog.id }}" style="text-decoration: none;">
+                    <a href="{{ blog_url }}" style="text-decoration: none;">
                         <img src="{{ gallery_img.image.url }}" style="height: 60px; object-fit: cover; width: 100%; border-radius: 4px; cursor: pointer;">
                     </a>
                     {% endfor %}
@@ -71,10 +73,33 @@
                         N/A
                     {% endfor %}
                 </p>
+                <a href="{{ blog_url }}" class="btn btn-info btn-sm">View</a>
+            </div>
+        </div>
+    </div>
+    {% endwith %}
+    {% else %}
+    <div class="col-md-4 mb-3" data-blog-id="{{ blog.id }}">
+        <div class="card shadow-sm h-100">
+            <div class="card-body pb-0">
+                <h5>
+                    <a href="/blog-detail/?id={{ blog.id }}" style="text-decoration: none; color: inherit; cursor: pointer;">
+                        {{ blog.title }}
+                    </a>
+                </h5>
+                {% if blog.featured_image %}
+                <a href="/blog-detail/?id={{ blog.id }}" style="text-decoration: none;">
+                    <img src="{{ blog.featured_image.url }}" class="card-img" style="height: 200px; object-fit: cover; cursor: pointer; width: 100%; margin: 10px -12px 0 -12px; border-radius: 0 0 0.25rem 0.25rem;">
+                </a>
+                {% endif %}
+            </div>
+            <div class="card-body pt-2">
+                <p class="text-muted small mb-2">Author: {{ blog.author_name|default:'Unknown' }} | 👁 <span class="blog-view-count">{{ blog.view_count }}</span> views</p>
                 <a href="/blog-detail/?id={{ blog.id }}" class="btn btn-info btn-sm">View</a>
             </div>
         </div>
     </div>
+    {% endif %}
     {% empty %}
     <div class="col-12">
         <div class="alert alert-info">No blogs found</div>

@@ -135,17 +135,20 @@ async function loadBlogs(query=""){
             const tagsList = blog.tags && blog.tags.length > 0 
                 ? blog.tags.join(', ') 
                 : 'N/A';
+            const detailUrl = blog.slug
+                ? `/post/${encodeURIComponent(blog.slug)}/`
+                : `/blog-detail/?id=${blog.id}`;
                 
             container.innerHTML += `
             <div class="col-md-4 mb-3" data-blog-id="${blog.id}">
             <div class="card shadow-sm h-100">
             <div class="card-body pb-0">
             <h5>
-                <a href="/blog-detail/?id=${blog.id}" style="text-decoration: none; color: inherit; cursor: pointer;">
+                <a href="${detailUrl}" style="text-decoration: none; color: inherit; cursor: pointer;">
                     ${blog.title}
                 </a>
             </h5>
-            <a href="/blog-detail/?id=${blog.id}" style="text-decoration: none;">
+            <a href="${detailUrl}" style="text-decoration: none;">
                 <img src="${blog.featured_image}" class="card-img" style="height: 200px; object-fit: cover; cursor: pointer; width: 100%; margin: 10px -12px 0 -12px; border-radius: 0 0 0.25rem 0.25rem;">
             </a>
             </div>
@@ -154,7 +157,7 @@ async function loadBlogs(query=""){
             <p>${toTitleCase(blog.short_description || '')}</p>
             <p class="text-muted small mb-1"><strong>Categories:</strong> ${categoriesList}</p>
             <p class="text-muted small mb-2"><strong>Tags:</strong> ${tagsList}</p>
-            <a href="/blog-detail/?id=${blog.id}" class="btn btn-info btn-sm">View</a>
+            <a href="${detailUrl}" class="btn btn-info btn-sm">View</a>
             </div>
             </div>
             </div>`;

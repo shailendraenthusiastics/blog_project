@@ -419,4 +419,4 @@ class BlogSitemap(Sitemap):
         return obj.updated_at
 
     def location(self, obj):
-        return f"/api/post/{obj.slug}/"
+        return f"/post/{obj.slug}/"
