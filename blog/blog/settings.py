@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 from pathlib import Path
 from datetime import timedelta
 import os
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-y-k9stp(1afj+nup%0-us9&ng(g&#(ky_*2)wvdg+syul07fcz"
 DEBUG = True
@@ -27,27 +28,26 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_simplejwt",
     "api",
+    "django.contrib.sitemaps",
 ]
-MEDIA_URL = '/media/'
-MEDIA_ROOT=os.path.join(BASE_DIR, 'media')
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticatedOrReadOnly",
     ],
-    'DEFAULT_RENDERER_CLASSES': [
-        'rest_framework.renderers.JSONRenderer',
-    ]
+    "DEFAULT_RENDERER_CLASSES": [
+        "rest_framework.renderers.JSONRenderer",
+    ],
 }
-
-
 
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),    
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
 }
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -79,16 +79,15 @@ TEMPLATES = [
 WSGI_APPLICATION = "blog.wsgi.application"
 
 DATABASES = {
-    "default":{
-        "ENGINE":"django.db.backends.mysql",
-        "NAME":"blog", 
-        "USER":"root",
-        "PASSWORD":"sky1234@#$",
-        "HOST":"localhost",     
-        "PORT":"3306",  
-
-        }
+    "default": {
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": "blog",
+        "USER": "root",
+        "PASSWORD": "sky1234@#$",
+        "HOST": "localhost",
+        "PORT": "3306",
     }
+}
 
 AUTH_PASSWORD_VALIDATORS = [
     {
