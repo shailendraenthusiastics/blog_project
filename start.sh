@@ -6,6 +6,15 @@ if [ -d "/var/data" ]; then
 	export MEDIA_ROOT="${MEDIA_ROOT:-/var/data/media}"
 fi
 
+if [ "${MEDIA_ROOT:-}" = "/var/data" ] || [ "${MEDIA_ROOT:-}" = "/var/data/" ]; then
+	export MEDIA_ROOT="/var/data/media"
+fi
+
+if [ -n "${MEDIA_ROOT:-}" ] && [[ "${MEDIA_ROOT}" == /var/data* ]] && [ ! -d "/var/data" ]; then
+	echo "MEDIA_ROOT targets /var/data but disk is not mounted. Falling back to ./media"
+	export MEDIA_ROOT="./media"
+fi
+
 mkdir -p "${MEDIA_ROOT:-./media}"
 
 if [ "${MEDIA_ROOT:-./media}" != "./media" ]; then

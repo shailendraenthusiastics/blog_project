@@ -34,10 +34,45 @@ INSTALLED_APPS = [
     "api",
 ]
 MEDIA_URL = "/media/"
-default_media_root = os.path.join(BASE_DIR, "media")
-if RENDER_ENV or os.path.isdir("/var/data"):
-    default_media_root = "/var/data/media"
-MEDIA_ROOT = os.path.abspath(os.environ.get("MEDIA_ROOT", default_media_root))
+
+
+def _resolve_media_root():
+    local_media_root = os.path.abspath(os.path.join(BASE_DIR, "media"))
+    render_media_root = "/var/data/media"
+
+    requested = os.environ.get("MEDIA_ROOT", "").strip()
+    if requested in ("/var/data", "/var/data/"):
+        requested = render_media_root
+
+    if requested:
+        candidate = os.path.abspath(requested)
+    elif os.path.isdir("/var/data"):
+        candidate = render_media_root
+    else:
+        candidate = local_media_root
+
+    if candidate.startswith("/var/data") and not os.path.isdir("/var/data"):
+        print(
+            "MEDIA_ROOT points to /var/data but disk is not mounted. Falling back to local media directory."
+        )
+        candidate = local_media_root
+
+    try:
+        os.makedirs(candidate, exist_ok=True)
+        probe_path = os.path.join(candidate, ".media_write_probe")
+        with open(probe_path, "w", encoding="utf-8") as probe:
+            probe.write("ok")
+        os.remove(probe_path)
+        return candidate
+    except OSError as exc:
+        print(
+            f"MEDIA_ROOT '{candidate}' is not writable ({exc}). Falling back to local media directory."
+        )
+        os.makedirs(local_media_root, exist_ok=True)
+        return local_media_root
+
+
+MEDIA_ROOT = _resolve_media_root()
 print("EFFECTIVE MEDIA_ROOT:", MEDIA_ROOT)
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
