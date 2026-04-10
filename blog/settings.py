@@ -18,6 +18,7 @@ from urllib.parse import urlparse, unquote
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-y-k9stp(1afj+nup%0-us9&ng(g&#(ky_*2)wvdg+syul07fcz"
 DEBUG = True
+RENDER_ENV = os.environ.get("RENDER", "").lower() == "true"
 ALLOWED_HOSTS = ["*"]
 print("ALLOWED HOSTS LOADED:", ALLOWED_HOSTS)
 INSTALLED_APPS = [
@@ -34,9 +35,9 @@ INSTALLED_APPS = [
 ]
 MEDIA_URL = "/media/"
 default_media_root = os.path.join(BASE_DIR, "media")
-if os.path.isdir("/var/data"):
+if RENDER_ENV or os.path.isdir("/var/data"):
     default_media_root = "/var/data/media"
-MEDIA_ROOT = os.environ.get("MEDIA_ROOT", default_media_root)
+MEDIA_ROOT = os.path.abspath(os.environ.get("MEDIA_ROOT", default_media_root))
 print("EFFECTIVE MEDIA_ROOT:", MEDIA_ROOT)
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
