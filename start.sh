@@ -76,16 +76,16 @@ attempt=1
 until wait_for_database; do
 	echo "Database not ready (attempt ${attempt}/${max_attempts})."
 	if [ "${attempt}" -ge "${max_attempts}" ]; then
-		echo "Database was not reachable after ${max_attempts} attempts. Exiting."
-		exit 1
+		echo "Database was not reachable after ${max_attempts} attempts. Continuing startup so service can come up."
+		break
 	fi
 	attempt=$((attempt + 1))
 	sleep 5
 done
 
-python manage.py migrate --noinput
+python manage.py migrate --noinput || echo "Warning: migrate failed; continuing"
 # Seeding is best-effort and should not block app boot.
 python manage.py seed_render_content || echo "Warning: seed_render_content failed; continuing"
-python manage.py collectstatic --noinput
+python manage.py collectstatic --noinput || echo "Warning: collectstatic failed; continuing"
 
 exec gunicorn blog.wsgi:application --bind 0.0.0.0:${PORT:-10000}
