@@ -17,9 +17,12 @@ fi
 
 mkdir -p "${MEDIA_ROOT:-./media}"
 
+# Django uses MEDIA_ROOT directly; a local ./media symlink is optional.
+# On some platforms, replacing ./media may fail and should not crash startup.
 if [ "${MEDIA_ROOT:-./media}" != "./media" ]; then
-	rm -rf ./media
-	ln -s "${MEDIA_ROOT}" ./media
+	if [ ! -e "./media" ]; then
+		ln -s "${MEDIA_ROOT}" ./media || echo "Warning: could not create ./media symlink; continuing"
+	fi
 fi
 
 echo "Using MEDIA_ROOT=${MEDIA_ROOT:-./media}"
@@ -81,7 +84,8 @@ until wait_for_database; do
 done
 
 python manage.py migrate --noinput
-python manage.py seed_render_content
+# Seeding is best-effort and should not block app boot.
+python manage.py seed_render_content || echo "Warning: seed_render_content failed; continuing"
 python manage.py collectstatic --noinput
 
 exec gunicorn blog.wsgi:application --bind 0.0.0.0:${PORT:-10000}
